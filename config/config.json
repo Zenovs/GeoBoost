@@ -1,0 +1,8 @@
+{
+  "storage_path": "~/Documents/GA4_SEO_Projects",
+  "google_credentials_path": "path/to/service-account.json",
+  "pagespeed_api_key": "YOUR_PAGESPEED_API_KEY",
+  "ollama_model": "llama3.1:8b",
+  "crawler_max_depth": 3,
+  "crawler_max_urls": 500
+}

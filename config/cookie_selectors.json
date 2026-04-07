@@ -1,0 +1,16 @@
+{
+  "cookie_banner_selectors": {
+    "cookiebot": "#CybotCookiebotDialogBodyButtonAccept",
+    "onetrust": "#onetrust-accept-btn-handler",
+    "usercentrics": "[data-testid='uc-accept-all-button']",
+    "borlabs": "#borlabs-cookie-btn-accept-all",
+    "cookieyes": ".cky-btn-accept",
+    "consentmanager": "#c-p-bn",
+    "generic": [
+      "[id*='cookie'][id*='accept']",
+      "[class*='cookie'][class*='accept']",
+      "[id*='consent'][id*='accept']",
+      "button[id*='accept-all']"
+    ]
+  }
+}

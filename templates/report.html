@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>GA4 SEO Analyse</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        h1 { color: #333; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+    </style>
+</head>
+<body>
+    <h1>GA4 SEO Analyse Report</h1>
+    <p>Datum: {{ data.date }}</p>
+    
+    <h2>Traffic Daten</h2>
+    <table>
+        <tr><th>Channel</th><th>Sessions</th><th>Conversions</th></tr>
+        {% for item in data.traffic %}
+        <tr><td>{{ item.channel }}</td><td>{{ item.sessions }}</td><td>{{ item.conversions }}</td></tr>
+        {% endfor %}
+    </table>
+    
+    <h2>Analyse</h2>
+    <p>{{ data.analysis }}</p>
+</body>
+</html>

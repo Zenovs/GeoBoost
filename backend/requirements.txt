@@ -1,0 +1,13 @@
+requests
+playwright
+google-api-python-client
+google-auth
+google-auth-oauthlib
+google-auth-httplib2
+ollama
+jinja2
+weasyprint
+chart.js (für Python? Nein, Chart.js ist JS, für PDF verwende matplotlib oder ähnlich)
+matplotlib
+pandas
+sqlite3 (built-in)
