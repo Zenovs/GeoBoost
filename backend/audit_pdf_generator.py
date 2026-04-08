@@ -387,7 +387,7 @@ body { font-family: var(--font); font-size: 13px; line-height: 1.55; }
 .cover-meta-item span { color: var(--cover-text); font-weight: 600; font-size: 12px; }
 
 /* ── Layout ── */
-.page { padding: 48px 56px; background: var(--bg); }
+.page { padding: 0; background: var(--bg); }
 .section { margin-bottom: 36px; }
 h2.section-title {
   font-size: 17px; font-weight: 700; color: var(--primary);
@@ -491,14 +491,17 @@ tr:last-child td { border-bottom: none; }
 }
 .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 
-/* Page margins – schnyder: zero on all pages so black background bleeds to edge */
+/*
+ * @page margins apply to EVERY physical page including continuation pages,
+ * so content always has consistent padding even after a page break inside a div.
+ * .page divs get no extra padding – spacing is handled entirely by @page.
+ */
 {% if theme_name == "schnyder" %}
-@page        { margin: 0; background: #000000; }
-@page :first { margin: 0; background: #000000; }
-.page { padding: 52px 64px; }
+@page        { margin: 52px 64px; background: #000000; }
+@page :first { margin: 0;         background: #000000; }
 {% else %}
 @page        { margin: 1.5cm 1.8cm; @bottom-right { content: "{{ company }} · Seite " counter(page); font-size: 10px; color: var(--footer-color); } }
-@page :first { margin: 0; @bottom-right { content: none; } }
+@page :first { margin: 0;           @bottom-right { content: none; } }
 {% endif %}
 </style>
 </head>
