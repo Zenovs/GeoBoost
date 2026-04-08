@@ -50,6 +50,7 @@ export default function AuditList({ onOpen, initialShowCreate = false, onCreateS
       setShowCreate(true);
       onCreateShown?.();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialShowCreate]);
 
   const handleCreate = async () => {

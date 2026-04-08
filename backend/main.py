@@ -634,7 +634,7 @@ def create_audit(req: CreateAuditRequest):
         website_url=req.website_url,
         project_id=req.project_id,
     )
-    return {"audit_id": audit_id}
+    return {"id": audit_id}
 
 
 @app.get("/api/audits/{audit_id}")
