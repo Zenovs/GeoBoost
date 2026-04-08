@@ -792,6 +792,29 @@ def generate_audit_report(audit_id: int, req: GenerateReportRequest = None):
         raise HTTPException(500, f"PDF-Fehler: {e}")
 
 
+@app.post("/api/audits/{audit_id}/report/generate-html")
+def generate_audit_html(audit_id: int, req: GenerateReportRequest = None):
+    """Generate HTML report from audit data."""
+    from audit_html_generator import AuditHTMLGenerator
+    theme = (req.theme if req else None) or "light"
+    audit = db.get_audit(audit_id)
+    if not audit:
+        raise HTTPException(404, "Audit nicht gefunden")
+    config = load_config()
+    storage = Path(config.get("storage_path", "~/Documents/GeoBoost_Projects")).expanduser()
+    html_dir = storage / "audits"
+    html_dir.mkdir(parents=True, exist_ok=True)
+    html_path = html_dir / f"audit_{audit_id}_{theme}.html"
+    try:
+        gen = AuditHTMLGenerator(config=config)
+        gen.generate(audit, str(html_path), theme=theme)
+        db.save_audit_pdf(audit_id, str(html_path))  # reuse pdf_path field for the path
+        return {"ok": True, "html_path": str(html_path)}
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        raise HTTPException(500, f"HTML-Fehler: {e}")
+
+
 @app.get("/api/audits/{audit_id}/report/pdf")
 def download_audit_pdf(audit_id: int):
     audit = db.get_audit(audit_id)

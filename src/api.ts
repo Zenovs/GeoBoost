@@ -355,4 +355,7 @@ export const AUDIT_THEMES: { id: AuditTheme; label: string; preview: string; bg:
 export const generateAuditPdf = (auditId: number, theme: AuditTheme = "light") =>
   post<{ pdf_path: string }>(`/audits/${auditId}/report/generate`, { theme });
 
+export const generateAuditHtml = (auditId: number, theme: AuditTheme = "light") =>
+  post<{ html_path: string }>(`/audits/${auditId}/report/generate-html`, { theme });
+
 export const getAuditPdfUrl = (auditId: number) => `${BASE}/audits/${auditId}/report/pdf`;
