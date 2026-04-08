@@ -59,11 +59,21 @@ app.add_middleware(
 db = Database()
 
 
+DEFAULTS_PATH = Path(__file__).parent.parent / "config" / "config.defaults.json"
+
+
 def load_config() -> Dict[str, Any]:
+    # Start from shipped defaults
+    defaults: Dict[str, Any] = {}
+    if DEFAULTS_PATH.exists():
+        with open(DEFAULTS_PATH) as f:
+            defaults = json.load(f)
+    # Overlay with user config (never overwritten by git pull)
     if CONFIG_PATH.exists():
         with open(CONFIG_PATH) as f:
-            return json.load(f)
-    return {}
+            user = json.load(f)
+        defaults.update(user)
+    return defaults
 
 
 def save_config(config: Dict[str, Any]):

@@ -1,1 +1,23 @@
-node_modules
+# Dependencies
+node_modules/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Build output
+dist/
+src-tauri/target/
+
+# Generated data & user config (never overwrite on update)
+config/geoboost.db
+config/config.json
+config/credentials/
+
+# Logs & temp
+*.log
+*.tmp
+.DS_Store
+
+# Reports output (user data)
+~/Documents/GeoBoost_Projects/
