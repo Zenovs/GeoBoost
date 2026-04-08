@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   getAnalysisStatus,
   getAnalysisResults,
@@ -220,6 +220,57 @@ export default function AnalysisProgress({ analysisId, onDone, onNewAnalysis }: 
             );
           })()}
 
+          {/* PageSpeed Failed Audits */}
+          {(() => {
+            const ps = results.results.pagespeed as Record<string, Record<string, unknown>> | undefined;
+            const mob = ps?.mobile as Record<string, unknown> | undefined;
+            const failedAudits = mob?.failed_audits as Array<{
+              id: string; title: string; description: string; explanation_de: string;
+              display_value: string; score: number; savings_ms: number | null; rating: string; category: string;
+            }> | undefined;
+            if (!failedAudits?.length) return null;
+            return (
+              <div className="card mb-4">
+                <div className="card-header">
+                  <h3>PageSpeed – Gefundene Probleme</h3>
+                  <span className="badge badge-blue">{failedAudits.length} Audits</span>
+                </div>
+                <div className="card-body">
+                  {failedAudits.map((audit) => (
+                    <div key={audit.id} style={{
+                      background: "var(--gray-50, #f9fafb)",
+                      border: "1px solid var(--gray-200)",
+                      borderLeft: `4px solid ${audit.rating === "fail" ? "var(--red)" : "var(--orange)"}`,
+                      borderRadius: "0 6px 6px 0",
+                      padding: "10px 14px",
+                      marginBottom: 8,
+                    }}>
+                      <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 4 }}>
+                        <span className={`badge ${audit.rating === "fail" ? "badge-p1" : "badge-p2"}`} style={{ textTransform: "uppercase", fontSize: 10 }}>{audit.rating}</span>
+                        <span className="badge badge-blue" style={{ fontSize: 10 }}>{audit.category}</span>
+                        <strong style={{ fontSize: 13 }}>{audit.title}</strong>
+                        {audit.savings_ms != null && (
+                          <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--orange)", fontWeight: 600 }}>
+                            -{audit.savings_ms} ms
+                          </span>
+                        )}
+                        {audit.display_value && (
+                          <span style={{ fontSize: 11, color: "var(--gray-500)" }}>{audit.display_value}</span>
+                        )}
+                      </div>
+                      {audit.explanation_de && (
+                        <div style={{ fontSize: 12, color: "var(--gray-600)", marginBottom: 3 }}>{audit.explanation_de}</div>
+                      )}
+                      {!audit.explanation_de && audit.description && (
+                        <div style={{ fontSize: 12, color: "var(--gray-500)" }}>{audit.description}</div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+
           {/* Speed Test */}
           {(() => {
             const st = results.results.speedtest as {
@@ -267,6 +318,7 @@ export default function AnalysisProgress({ analysisId, onDone, onNewAnalysis }: 
                             <th>Transfer</th>
                             <th>Total</th>
                             <th>Komprimierung</th>
+                            <th>HTTP</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -282,6 +334,7 @@ export default function AnalysisProgress({ analysisId, onDone, onNewAnalysis }: 
                               <td>{p.transfer_ms != null ? `${p.transfer_ms} ms` : "–"}</td>
                               <td style={{ color: ratingColor(p.total_rating), fontWeight: 600 }}>{p.total_ms != null ? `${p.total_ms} ms` : "–"}</td>
                               <td>{p.content_encoding ? String(p.content_encoding) : <span style={{ color: "var(--red)" }}>Nein</span>}</td>
+                              <td>{p.http2 ? <span style={{ color: "var(--green)", fontWeight: 600 }}>H2</span> : <span style={{ color: "var(--gray-400)" }}>H1.1</span>}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -352,22 +405,87 @@ export default function AnalysisProgress({ analysisId, onDone, onNewAnalysis }: 
 
           {/* Crawler Summary */}
           {(() => {
-            const summary = (results.results.crawler as Record<string, Record<string, number>> | undefined)?.summary;
+            const crawlerData = results.results.crawler as Record<string, unknown> | undefined;
+            const summary = crawlerData?.summary as Record<string, number> | undefined;
+            const issues = crawlerData?.issues as Record<string, unknown[]> | undefined;
             if (!summary) return null;
+
+            const IssueList = ({ items, label, renderItem }: {
+              items: unknown[]; label: string; renderItem: (item: unknown, i: number) => React.ReactNode;
+            }) => items.length === 0 ? null : (
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: "var(--gray-600)", marginBottom: 4 }}>{label} ({items.length})</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                  {items.slice(0, 10).map((item, i) => renderItem(item, i))}
+                  {items.length > 10 && <span style={{ fontSize: 11, color: "var(--gray-400)" }}>+{items.length - 10} weitere</span>}
+                </div>
+              </div>
+            );
+
             return (
               <div className="card mb-4">
                 <div className="card-header"><h3>Crawl-Ergebnisse</h3></div>
-                <div className="card-body table-container">
-                  <table>
-                    <thead><tr><th>Check</th><th>Wert</th></tr></thead>
-                    <tbody>
-                      <tr><td>Seiten gecrawlt</td><td>{summary.total_pages}</td></tr>
-                      <tr><td>Fehlerseiten (4xx/5xx)</td><td><span className={summary.pages_error > 0 ? "text-red font-semibold" : "text-green"}>{summary.pages_error}</span></td></tr>
-                      <tr><td>Fehlende Titles</td><td><span className={summary.missing_titles > 0 ? "text-orange font-semibold" : "text-green"}>{summary.missing_titles}</span></td></tr>
-                      <tr><td>Fehlende Meta-Descriptions</td><td><span className={summary.missing_meta > 0 ? "text-orange" : "text-green"}>{summary.missing_meta}</span></td></tr>
-                      <tr><td>Bilder ohne Alt-Text</td><td><span className={summary.images_without_alt > 0 ? "text-orange" : "text-green"}>{summary.images_without_alt}</span></td></tr>
-                    </tbody>
-                  </table>
+                <div className="card-body">
+                  <div className="table-container mb-4">
+                    <table>
+                      <thead><tr><th>Check</th><th>Wert</th></tr></thead>
+                      <tbody>
+                        <tr><td>Seiten gecrawlt</td><td>{summary.total_pages}</td></tr>
+                        <tr><td>Fehlerseiten (4xx/5xx)</td><td><span className={summary.pages_error > 0 ? "text-red font-semibold" : ""}>{summary.pages_error}</span></td></tr>
+                        <tr><td>Fehlende Titles</td><td><span className={summary.missing_titles > 0 ? "text-orange font-semibold" : ""}>{summary.missing_titles}</span></td></tr>
+                        <tr><td>Fehlende Meta-Descriptions</td><td><span className={summary.missing_meta > 0 ? "text-orange" : ""}>{summary.missing_meta}</span></td></tr>
+                        <tr><td>Bilder ohne Alt-Text</td><td><span className={summary.images_without_alt > 0 ? "text-orange" : ""}>{summary.images_without_alt}</span></td></tr>
+                        <tr><td>Doppelte Titles</td><td><span className={summary.duplicate_titles > 0 ? "text-orange" : ""}>{summary.duplicate_titles ?? 0}</span></td></tr>
+                        <tr><td>Seiten mit strukturierten Daten</td><td>{summary.pages_with_structured_data ?? 0}</td></tr>
+                        <tr><td>Langsame Seiten (&gt;1s)</td><td><span className={summary.slow_pages_count > 0 ? "text-orange" : ""}>{summary.slow_pages_count ?? 0}</span></td></tr>
+                        <tr><td>Ø Ladezeit (Crawler)</td><td>{summary.avg_response_ms != null ? `${summary.avg_response_ms} ms` : "–"}</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {issues && (
+                    <div>
+                      <IssueList
+                        items={issues.missing_title ?? []}
+                        label="Seiten ohne Title-Tag"
+                        renderItem={(url, i) => (
+                          <span key={i} style={{ fontSize: 11, background: "var(--red-light, #fee2e2)", color: "var(--red)", padding: "2px 6px", borderRadius: 4 }}>
+                            {String(url).replace(/^https?:\/\/[^/]+/, "").slice(0, 40) || "/"}
+                          </span>
+                        )}
+                      />
+                      <IssueList
+                        items={issues.missing_meta_description ?? []}
+                        label="Seiten ohne Meta-Description"
+                        renderItem={(url, i) => (
+                          <span key={i} style={{ fontSize: 11, background: "#fff7ed", color: "var(--orange)", padding: "2px 6px", borderRadius: 4 }}>
+                            {String(url).replace(/^https?:\/\/[^/]+/, "").slice(0, 40) || "/"}
+                          </span>
+                        )}
+                      />
+                      <IssueList
+                        items={(issues.title_too_long ?? []) as Array<{url: string; length: number; title: string}>}
+                        label="Title zu lang (&gt;60 Zeichen)"
+                        renderItem={(item: unknown, i) => {
+                          const it = item as {url: string; length: number; title: string};
+                          return (
+                            <span key={i} title={it.title} style={{ fontSize: 11, background: "#fff7ed", color: "var(--orange)", padding: "2px 6px", borderRadius: 4 }}>
+                              {String(it.url).replace(/^https?:\/\/[^/]+/, "").slice(0, 35) || "/"} ({it.length}Z)
+                            </span>
+                          );
+                        }}
+                      />
+                      <IssueList
+                        items={issues.error_pages ?? []}
+                        label="Fehlerseiten (4xx/5xx)"
+                        renderItem={(url, i) => (
+                          <span key={i} style={{ fontSize: 11, background: "#fee2e2", color: "var(--red)", padding: "2px 6px", borderRadius: 4 }}>
+                            {String(url).replace(/^https?:\/\/[^/]+/, "").slice(0, 40) || "/"}
+                          </span>
+                        )}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             );

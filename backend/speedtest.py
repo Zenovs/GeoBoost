@@ -86,18 +86,22 @@ def _measure_once(url: str, session: requests.Session, timeout: int = 15) -> Dic
         connect_ms = round((t_connect_end - t_connect_start) * 1000, 1)
 
         tls_ms = None
+        http2 = False
         if is_https:
             t_tls_start = time.perf_counter()
             ctx = ssl.create_default_context()
+            ctx.set_alpn_protocols(["h2", "http/1.1"])
             ssl_sock = ctx.wrap_socket(sock, server_hostname=host)
             t_tls_end = time.perf_counter()
             tls_ms = round((t_tls_end - t_tls_start) * 1000, 1)
+            http2 = ssl_sock.selected_alpn_protocol() == "h2"
             sock = ssl_sock
         sock.close()
     except Exception:
         dns_ms = None
         connect_ms = None
         tls_ms = None
+        http2 = False
 
     # Full HTTP request with timing
     try:
@@ -137,7 +141,7 @@ def _measure_once(url: str, session: requests.Session, timeout: int = 15) -> Dic
             "content_encoding": content_encoding,
             "server": resp.headers.get("Server", ""),
             "cache_control": resp.headers.get("Cache-Control", ""),
-            "http2": resp.raw.version == 20 if hasattr(resp.raw, "version") else False,
+            "http2": http2,
             "error": None,
         }
     except requests.exceptions.Timeout:
