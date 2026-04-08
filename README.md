@@ -1,10 +1,64 @@
-# GeoBoost – GA4 & SEO Analyse-Tool
+<div align="center">
 
-Ein lokal installierbares Desktop-Tool für Mac, Windows und Linux. Analysiert Google Analytics 4 und SEO-Daten vollautomatisch und generiert ein präsentationsfertiges PDF.
+# GeoBoost
+
+**SEO & Performance Analyse-Tool für Agenturen**
+
+Ein lokales Desktop-Tool, das SEO-Audits strukturiert erfasst, Websites analysiert und professionelle Berichte generiert – ohne Cloud, ohne Abo, vollständig auf deinem Computer.
+
+[![macOS](https://img.shields.io/badge/macOS-12+-black?logo=apple&logoColor=white)](https://github.com/Zenovs/GeoBoost/releases/latest)
+[![Windows](https://img.shields.io/badge/Windows-10+-0078D4?logo=windows&logoColor=white)](https://github.com/Zenovs/GeoBoost/releases/latest)
+[![Linux](https://img.shields.io/badge/Linux-Ubuntu%2022+-E95420?logo=ubuntu&logoColor=white)](https://github.com/Zenovs/GeoBoost/releases/latest)
+[![License](https://img.shields.io/badge/Lizenz-Proprietär-red)](./LICENSE)
+
+</div>
 
 ---
 
-## Installation (ein Befehl)
+## Was ist GeoBoost?
+
+GeoBoost ist ein Desktop-Tool für SEO-Agenturen und Freelancer, mit dem du strukturierte SEO-Audits direkt auf deinem Computer durchführen und professionell dokumentieren kannst.
+
+Du erfasst alle relevanten Daten in einem geführten 7-Schritte-Workflow – von der Kundenbefragung über Crawl-Analyse und Lighthouse-Tests bis zur finalen Empfehlung – und erzeugst mit einem Klick einen präsentationsfertigen Bericht als interaktive Website oder PDF.
+
+**Alles bleibt lokal.** Keine Cloud, kein Abo, keine Datenweitergabe.
+
+### Was GeoBoost kann
+
+| | |
+|---|---|
+| **Audit-Workflow** | Geführter 7-Schritte-Prozess: Kickoff → Website-Analyse → Crawl → SEO → Performance → Fazit → Bericht |
+| **Website-Crawl** | Erkennt fehlende Titles, H1-Tags, Meta-Descriptions, 404-Fehler, Weiterleitungen und langsame Seiten |
+| **Technische SEO** | Site Health Score, Issue-Kategorisierung nach Schweregrad (Fehler / Warnungen / Hinweise) |
+| **Performance** | Lighthouse/PageSpeed-Scores für Mobile & Desktop, Core Web Vitals (LCP, CLS, TBT) |
+| **HTML-Bericht** | Interaktiver, responsiver Bericht mit 5 Themes, Grafiken und eingebautem Theme-Switcher |
+| **PDF-Export** | Druckfertiges PDF – direkt aus dem Browser oder via WeasyPrint |
+| **Mehrere Audits** | Unbegrenzte Projekte, alle Daten lokal in SQLite gespeichert |
+| **Offline-fähig** | Funktioniert ohne Internetverbindung (ausser für externe APIs) |
+
+---
+
+## Download & Installation
+
+### Desktop-App (empfohlen)
+
+Lade die neueste Version direkt herunter – keine weiteren Abhängigkeiten nötig:
+
+| Betriebssystem | Download |
+|---|---|
+| **macOS** (Apple Silicon, M1/M2/M3) | [GeoBoost.dmg (ARM)](https://github.com/Zenovs/GeoBoost/releases/latest) |
+| **macOS** (Intel) | [GeoBoost.dmg (x64)](https://github.com/Zenovs/GeoBoost/releases/latest) |
+| **Windows** (64-bit) | [GeoBoost-Setup.exe](https://github.com/Zenovs/GeoBoost/releases/latest) |
+| **Linux** (Debian/Ubuntu) | [GeoBoost.deb](https://github.com/Zenovs/GeoBoost/releases/latest) |
+| **Linux** (AppImage) | [GeoBoost.AppImage](https://github.com/Zenovs/GeoBoost/releases/latest) |
+
+> Alle Downloads sind auf der [Releases-Seite](https://github.com/Zenovs/GeoBoost/releases/latest) verfügbar.
+
+---
+
+### Installation per Skript (Entwicklermodus)
+
+Alternativ kann die App direkt aus dem Quellcode installiert und gestartet werden:
 
 **Mac / Linux:**
 ```bash
@@ -16,113 +70,49 @@ curl -fsSL https://raw.githubusercontent.com/Zenovs/GeoBoost/main/install.sh | b
 irm https://raw.githubusercontent.com/Zenovs/GeoBoost/main/install.ps1 | iex
 ```
 
-Das Skript installiert automatisch: Python 3, Node.js, Rust, alle Abhängigkeiten, optionales Ollama (lokale KI).
+Das Skript installiert automatisch alle Abhängigkeiten (Python, Node.js, Rust) und richtet die App ein.
 
----
-
-## Starten
-
+Nach der Installation starten:
 ```bash
 cd ~/GeoBoost && ./start.sh
 ```
 
-Oder nur das Backend (für Tests im Browser):
-```bash
-cd ~/GeoBoost && ./backend/start_backend.sh
-# → http://127.0.0.1:8765/docs  (interaktive API-Dokumentation)
+---
+
+## Schnellstart
+
+1. **App öffnen** – GeoBoost startet direkt, keine Konfiguration notwendig
+2. **Neuen Audit erstellen** – Klick auf „Neue Analyse" im Dashboard
+3. **Workflow durchlaufen** – 7 Schritte von Kickoff bis Bericht, jeder Schritt wird automatisch gespeichert
+4. **Bericht generieren** – Theme wählen → HTML-Bericht oder PDF in Sekunden erstellt
+
+---
+
+## SEO-Audit Workflow
+
+GeoBoost führt dich durch einen strukturierten 7-Schritte-Prozess:
+
+```
+Schritt 0 – Kickoff          Kundendaten, Ziele, Analysezeitraum, GA4 Property
+Schritt 1 – Website & Kunden UX-Bewertung, Backlinks, Social Media, Wettbewerb
+Schritt 2 – Technischer Scan Allgemeine technische Notizen und Beobachtungen
+Schritt 3 – Crawl-Analyse    URL-Status, fehlende Meta-Daten, Weiterleitungen
+Schritt 4 – SEO-Analyse      Site Health Score, Issues nach Schweregrad
+Schritt 5 – Performance      Lighthouse Scores, Core Web Vitals, Top-3-Prioritäten
+Schritt 6 – Bericht          Erkenntnisse, Empfehlungen → HTML + PDF Export
 ```
 
 ---
 
-## Features
+## Berichte & Themes
 
-| Feature | Beschreibung |
-|---|---|
-| **Kickoff-Assistent** | 5-Schritt Fragekatalog für strukturierte Projekt-Erfassung |
-| **Website-Crawling** | Vollständiger Crawl: Titles, H1, Meta, Alt-Texte, 404s, Duplikate |
-| **PageSpeed Insights** | Mobile + Desktop Score, Core Web Vitals (LCP, CLS, TBT) |
-| **GA4 Analytics** | Traffic, Conversions, Kanäle, Geräte, Landing Pages |
-| **KI-Analyse (lokal)** | Ollama (Llama 3.1 / Mistral) generiert Massnahmenkatalog auf Deutsch |
-| **PDF-Report** | Präsentationsfertiges PDF mit Charts, automatisch generiert |
-| **Plugin-Architektur** | Neue Checks als Plugins in `plugins/checks/` erweiterbar |
-| **Offline-fähig** | Alle Daten bleiben lokal, keine Cloud-Abhängigkeit |
+Der generierte HTML-Bericht ist vollständig interaktiv:
 
----
-
-## Setup nach der Installation
-
-### 1. Google Service Account einrichten
-
-1. [Google Cloud Console](https://console.cloud.google.com) öffnen
-2. **APIs aktivieren:** *Google Analytics Data API* + *PageSpeed Insights API*
-3. **Service Account erstellen:** IAM & Verwaltung → Dienstkonten → JSON-Key herunterladen
-4. **GA4-Zugriff:** GA4 Admin → Property → Nutzerverwaltung → Service Account E-Mail als Betrachter hinzufügen
-5. JSON-Datei in GeoBoost **Einstellungen** hochladen
-
-### 2. Ollama-Modell (KI-Analyse)
-
-```bash
-ollama pull llama3.1:8b   # ~5 GB – empfohlen
-# oder
-ollama pull mistral:7b    # ~4 GB – gut für Deutsch
-```
-
-### 3. Erste Analyse starten
-
-1. App starten: `./start.sh`
-2. **Neue Analyse** → Kickoff ausfüllen (URL + GA4 Property ID)
-3. Checks auswählen (oder Preset "Level 1 Standard" verwenden)
-4. Analyse starten → nach ~20 Minuten PDF herunterladen
-
----
-
-## Projektstruktur
-
-```
-GeoBoost/
-├── backend/
-│   ├── main.py              # FastAPI Server (Port 8765)
-│   ├── database.py          # SQLite Projektverwaltung
-│   ├── crawler.py           # Website-Crawling (requests + BeautifulSoup)
-│   ├── ga4_api.py           # Google Analytics 4 API
-│   ├── pagespeed_api.py     # PageSpeed Insights API
-│   ├── analyzer.py          # KI-Analyse via Ollama
-│   ├── pdf_generator.py     # PDF-Generierung (WeasyPrint + matplotlib)
-│   └── requirements.txt
-├── src/                     # React Frontend (Tauri)
-│   ├── App.tsx
-│   ├── api.ts               # API-Client
-│   ├── styles.css
-│   └── components/
-│       ├── Dashboard.tsx    # Projekt-Übersicht
-│       ├── Kickoff.tsx      # 5-Schritt Fragekatalog
-│       ├── CheckSelector.tsx # Check-Auswahl + Presets
-│       ├── AnalysisProgress.tsx # Live-Status + Ergebnisse
-│       └── Settings.tsx     # Konfiguration
-├── src-tauri/               # Tauri/Rust (Desktop-Wrapper)
-│   ├── src/main.rs          # Startet Python-Backend automatisch
-│   └── tauri.conf.json
-├── templates/
-│   └── report.html          # PDF-Template (Jinja2)
-├── plugins/checks/          # Erweiterbare Plugin-Checks
-├── config/
-│   ├── config.json          # App-Konfiguration
-│   └── cookie_selectors.json
-├── install.sh               # One-Line Installer (Mac/Linux)
-├── start.sh                 # App starten (Dev-Modus)
-└── README.md
-```
-
----
-
-## Analyse-Presets
-
-| Preset | Checks | Laufzeit |
-|---|---|---|
-| **Level 1 – Standard** | Crawl + PageSpeed + GA4 + KI + PDF | ~20 min |
-| **Schnell-Check** | PageSpeed + GA4 Übersicht + PDF | ~8 min |
-| **Nur Technisch** | Crawl + PageSpeed + PDF | ~10 min |
-| **Custom** | Freie Auswahl | variabel |
+- **5 Themes:** Light, Dark, Nerd (Terminal), Color, Schnyder (Schwarz/Grün)
+- **Theme-Wechsel live** direkt im Bericht – auch für den Kunden
+- **SVG-Grafiken:** Gauge-Charts für Lighthouse-Scores, Donut-Chart für SEO-Issues, Balkendiagramm für Crawl-Status
+- **Responsive:** funktioniert auf Desktop und Tablet
+- **PDF-Export:** Floating-Button im Bericht oder als separate .pdf-Datei
 
 ---
 
@@ -132,32 +122,17 @@ GeoBoost/
 |---|---|
 | Desktop-App | [Tauri 2](https://tauri.app) (Rust) |
 | Frontend | React 18 + TypeScript + Vite |
-| Backend | Python 3.10+ + FastAPI + uvicorn |
-| Crawler | requests + BeautifulSoup4 |
-| PDF | WeasyPrint + Jinja2 + matplotlib |
-| Analytics | Google Analytics Data API v1beta |
-| KI | [Ollama](https://ollama.ai) (lokal) |
-| Datenbank | SQLite (via Python stdlib) |
-
----
-
-## Hardware-Anforderungen
-
-| | Minimum | Empfohlen |
-|---|---|---|
-| RAM | 8 GB | 16 GB |
-| Speicher | 10 GB frei | 20 GB frei |
-| Internet | Ja (für APIs) | Stabile Verbindung |
-| OS | macOS 12+, Win 10+, Ubuntu 22+ | macOS 14+, Win 11, Ubuntu 24+ |
+| Backend | Python 3.10+ + FastAPI |
+| Bericht | WeasyPrint + Jinja2 (PDF), selbstständiges HTML (Browser) |
+| Datenbank | SQLite (lokal) |
 
 ---
 
 ## Datenschutz
 
-- Alle Projektdaten bleiben **lokal** auf dem Computer
-- API-Zugangsdaten werden **verschlüsselt** gespeichert
-- KI-Analyse läuft **vollständig lokal** via Ollama
-- Einzige externe Verbindungen: Google APIs (GA4, PageSpeed)
+- Alle Projektdaten bleiben **lokal** auf deinem Computer
+- Keine Registrierung, kein Account, keine Telemetrie
+- Einzige externe Verbindungen: Google APIs (PageSpeed Insights), falls konfiguriert
 
 ---
 
