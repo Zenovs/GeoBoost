@@ -9,8 +9,8 @@
 
 set -eo pipefail
 
-# Zuerst in ein sicheres Verzeichnis wechseln (falls cwd gelöscht wurde)
-cd "$HOME" 2>/dev/null || true
+# Sicheres Heimverzeichnis als Ausgangspunkt
+cd "$HOME"
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
 BLUE='\033[0;34m'; BOLD='\033[1m'; RESET='\033[0m'
@@ -24,28 +24,21 @@ step()    { echo -e "\n${BOLD}${BLUE}── $* ──${RESET}"; }
 # ── Pfade ─────────────────────────────────────────────────────────────────────
 REPO_URL="https://github.com/Zenovs/GeoBoost.git"
 
-# Zielverzeichnis bestimmen – NIEMALS /tmp oder / verwenden
-_detect_repo_dir() {
-    local script_dir
-    script_dir="$(cd "$(dirname "${BASH_SOURCE[1]:-/tmp}")" 2>/dev/null && pwd)" || script_dir="/tmp"
-
-    # Script liegt in /tmp oder / → nicht das Repo
-    if [[ "$script_dir" == "/tmp" || "$script_dir" == "/" ]]; then
-        if [[ -f "$HOME/.geoboost_path" ]]; then
-            cat "$HOME/.geoboost_path"
-        elif [[ -d "$HOME/Github/GeoBoost" ]]; then
-            echo "$HOME/Github/GeoBoost"
-        elif [[ -d "$HOME/GeoBoost" ]]; then
-            echo "$HOME/GeoBoost"
-        else
-            echo "$HOME/Github/GeoBoost"
-        fi
+# Installationspfad: Umgebungsvariable → gespeicherter Pfad → Standard
+if [[ -n "${GEOBOOST_DIR:-}" ]]; then
+    REPO_DIR="$GEOBOOST_DIR"
+elif [[ -f "$HOME/.geoboost_path" ]]; then
+    STORED="$(cat "$HOME/.geoboost_path")"
+    # Nur verwenden wenn es nicht /tmp oder / ist
+    if [[ "$STORED" != "/tmp" && "$STORED" != "/" && "$STORED" != "" ]]; then
+        REPO_DIR="$STORED"
     else
-        echo "$script_dir"
+        REPO_DIR="$HOME/Github/GeoBoost"
     fi
-}
+else
+    REPO_DIR="$HOME/Github/GeoBoost"
+fi
 
-REPO_DIR="$(_detect_repo_dir)"
 PARENT_DIR="$(dirname "$REPO_DIR")"
 REPO_NAME="$(basename "$REPO_DIR")"
 BACKUP_DIR="$HOME/.geoboost_backup_$(date +%Y%m%d_%H%M%S)"
