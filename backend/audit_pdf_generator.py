@@ -265,7 +265,7 @@ body { font-family: var(--font); font-size: 13px; line-height: 1.55; }
 {% endif %}
 {% if theme_name == "nerd" %}
 .cover::before {
-  content: "$ geoboost --report --audit {{ audit_id }}";
+  content: "$ analyse --report --generate";
   position: absolute; top: 40px; left: 60px;
   font-size: 11px; color: var(--primary); opacity: 0.7;
   font-family: var(--font);
@@ -422,7 +422,7 @@ tr:last-child td { border-bottom: none; }
 
 <!-- ══ Cover ══════════════════════════════════════════════════════════════ -->
 <div class="cover">
-  <div class="cover-badge">Website-Analyse{% if theme_name == "nerd" %} :: audit_{{ audit_id }}{% endif %}</div>
+  <div class="cover-badge">SEO &amp; Performance Analyse</div>
   <h1>{{ client_name or "Unbekannter Kunde" }}</h1>
   <h2>{{ website_url or "" }}</h2>
   <div class="cover-meta">
@@ -433,11 +433,11 @@ tr:last-child td { border-bottom: none; }
   </div>
 </div>
 
-<!-- ══ 1. Background-Crawl (Screaming Frog) ═══════════════════════════════ -->
+<!-- ══ 1. Website-Crawl Analyse ═══════════════════════════════════════════ -->
 {% if crawl %}
 <div class="page page-break">
   <div class="section">
-    <h2 class="section-title">{% if theme_name == "nerd" %}// {% endif %}1. Background-Crawl (Screaming Frog)</h2>
+    <h2 class="section-title">{% if theme_name == "nerd" %}// {% endif %}1. Website-Crawl Analyse</h2>
     {% if crawl.summary %}
     <div class="kpi-grid" style="grid-template-columns: repeat(4,1fr)">
       <div class="kpi-item"><div class="kpi-label">URLs gecrawlt</div><div class="kpi-value" style="color:var(--kpi-value)">{{ crawl.summary.total_urls | fmt_num }}</div></div>
@@ -477,11 +477,11 @@ tr:last-child td { border-bottom: none; }
 </div>
 {% endif %}
 
-<!-- ══ 2. SemRush Site Audit ══════════════════════════════════════════════ -->
+<!-- ══ 2. Technische SEO Analyse ══════════════════════════════════════════ -->
 {% if semrush %}
 <div class="page page-break">
   <div class="section">
-    <h2 class="section-title">{% if theme_name == "nerd" %}// {% endif %}2. SemRush Site Audit</h2>
+    <h2 class="section-title">{% if theme_name == "nerd" %}// {% endif %}2. Technische SEO Analyse</h2>
 
     {% if semrush.site_health_score is not none %}
     <div class="kpi-grid" style="grid-template-columns: repeat(4,1fr); margin-bottom: 16px">
@@ -536,11 +536,11 @@ tr:last-child td { border-bottom: none; }
 </div>
 {% endif %}
 
-<!-- ══ 3. Lighthouse Bericht ═══════════════════════════════════════════════ -->
+<!-- ══ 3. Performance Analyse ═════════════════════════════════════════════ -->
 {% if lighthouse %}
 <div class="page page-break">
   <div class="section">
-    <h2 class="section-title">{% if theme_name == "nerd" %}// {% endif %}3. Lighthouse Bericht</h2>
+    <h2 class="section-title">{% if theme_name == "nerd" %}// {% endif %}3. Performance Analyse</h2>
     <div class="two-col">
       <div>
         <h3 class="subsection">📱 Mobile</h3>
@@ -676,7 +676,7 @@ tr:last-child td { border-bottom: none; }
 
   <hr class="divider">
   <div style="font-size:11px; color:var(--footer-color); text-align:center">
-    Erstellt mit GeoBoost &mdash; {{ analysis_date }} &mdash; {{ company }}{% if theme_name == "schnyder" %} &mdash; schnyder-werbung.ch{% endif %}
+    {{ company }} &mdash; {{ analysis_date }}
   </div>
 </div>
 
