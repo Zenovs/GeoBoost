@@ -183,38 +183,57 @@ export default function AnalysisProgress({ analysisId, onDone, onNewAnalysis }: 
           {/* PageSpeed */}
           {(() => {
             const ps = results.results.pagespeed as Record<string, Record<string, unknown>> | undefined;
-            const mob = ps?.mobile;
-            const desk = ps?.desktop;
+            const mob = ps?.mobile as Record<string, unknown> | undefined;
+            const desk = ps?.desktop as Record<string, unknown> | undefined;
             if (!mob && !desk) return null;
+            const mobErr = mob?.error as string | undefined;
+            const isQuota = mobErr?.includes("Tageslimit") || (mob?.error_code === "QUOTA_EXCEEDED");
             return (
               <div className="card mb-4">
                 <div className="card-header"><h3>PageSpeed Insights</h3></div>
-                <div className="card-body table-container">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Metrik</th>
-                        <th>Mobile</th>
-                        <th>Desktop</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {[
-                        ["Performance Score", "performance_score"],
-                        ["SEO Score", "seo_score"],
-                        ["LCP", "lcp"],
-                        ["CLS", "cls"],
-                        ["TBT", "tbt"],
-                        ["FCP", "fcp"],
-                      ].map(([label, key]) => (
-                        <tr key={key}>
-                          <td>{label}</td>
-                          <td>{String(mob?.[key] ?? "–")}</td>
-                          <td>{String(desk?.[key] ?? "–")}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <div className="card-body">
+                  {mobErr ? (
+                    <div className="alert alert-error">
+                      <span>⚠</span>
+                      <div>
+                        <strong>{isQuota ? "API-Tageslimit erreicht" : "PageSpeed Fehler"}</strong>
+                        <div style={{ fontSize: 12, marginTop: 4 }}>{mobErr}</div>
+                        {isQuota && (
+                          <div style={{ fontSize: 12, marginTop: 6, color: "var(--gray-600)" }}>
+                            Kostenlosen API-Key erstellen: <strong>console.cloud.google.com</strong> → APIs → PageSpeed Insights API → Schlüssel → in GeoBoost Einstellungen eintragen.
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="table-container">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Metrik</th>
+                            <th>Mobile</th>
+                            <th>Desktop</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {[
+                            ["Performance Score", "performance_score"],
+                            ["SEO Score", "seo_score"],
+                            ["LCP", "lcp"],
+                            ["CLS", "cls"],
+                            ["TBT", "tbt"],
+                            ["FCP", "fcp"],
+                          ].map(([label, key]) => (
+                            <tr key={key}>
+                              <td>{label}</td>
+                              <td>{String(mob?.[key] ?? "–")}</td>
+                              <td>{String(desk?.[key] ?? "–")}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
               </div>
             );

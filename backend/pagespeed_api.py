@@ -96,11 +96,19 @@ class PageSpeedAPI:
             try:
                 resp = requests.get(self.BASE_URL, params=params, timeout=60)
                 if resp.status_code == 429:
-                    wait = 15 * (attempt + 1)
-                    import time as _time
-                    _time.sleep(wait)
-                    last_error = f"429 Rate limit – warte {wait}s"
-                    continue
+                    if attempt < 2:
+                        wait = 20 * (attempt + 1)
+                        import time as _time
+                        _time.sleep(wait)
+                        last_error = f"429 Rate limit – warte {wait}s"
+                        continue
+                    else:
+                        # Daily quota exhausted — no point retrying
+                        return {
+                            "url": url, "strategy": strategy,
+                            "error": "PageSpeed API Tageslimit erreicht. Bitte füge einen API-Key in den Einstellungen hinzu (kostenlos unter console.cloud.google.com).",
+                            "error_code": "QUOTA_EXCEEDED",
+                        }
                 resp.raise_for_status()
                 data = resp.json()
                 break
