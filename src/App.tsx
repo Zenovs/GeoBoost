@@ -6,9 +6,11 @@ import Kickoff from "./components/Kickoff";
 import CheckSelector from "./components/CheckSelector";
 import AnalysisProgress from "./components/AnalysisProgress";
 import Settings from "./components/Settings";
+import AuditList from "./components/audit/AuditList";
+import AuditWorkflow from "./components/audit/AuditWorkflow";
 import type { KickoffData, CheckConfig } from "./api";
 
-type View = "dashboard" | "kickoff" | "checks" | "progress" | "settings";
+type View = "dashboard" | "kickoff" | "checks" | "progress" | "settings" | "audits" | "audit-workflow";
 
 interface WizardState {
   kickoff?: KickoffData;
@@ -33,6 +35,7 @@ const DEFAULT_CHECKS: CheckConfig = {
 export default function App() {
   const [view, setView] = useState<View>("dashboard");
   const [wizard, setWizard] = useState<WizardState>({});
+  const [activeAuditId, setActiveAuditId] = useState<number | null>(null);
   const [backendOk, setBackendOk] = useState<boolean | null>(null);
   const [startupGrace, setStartupGrace] = useState(true);
   const [version, setVersion] = useState<string | null>(null);
@@ -62,6 +65,7 @@ export default function App() {
 
   const navItems: { id: View; icon: string; label: string }[] = [
     { id: "dashboard", icon: "🏠", label: "Dashboard" },
+    { id: "audits", icon: "📋", label: "Analysen" },
     { id: "settings", icon: "⚙️", label: "Einstellungen" },
   ];
 
@@ -77,7 +81,7 @@ export default function App() {
           {navItems.map((item) => (
             <div
               key={item.id}
-              className={`nav-item ${view === item.id ? "active" : ""}`}
+              className={`nav-item ${view === item.id || (item.id === "audits" && view === "audit-workflow") ? "active" : ""}`}
               onClick={() => nav(item.id)}
             >
               <span className="nav-icon">{item.icon}</span>
@@ -165,6 +169,22 @@ export default function App() {
               setWizard({});
               nav("kickoff");
             }}
+          />
+        )}
+
+        {view === "audits" && (
+          <AuditList
+            onOpen={(id) => {
+              setActiveAuditId(id);
+              nav("audit-workflow");
+            }}
+          />
+        )}
+
+        {view === "audit-workflow" && activeAuditId !== null && (
+          <AuditWorkflow
+            auditId={activeAuditId}
+            onBack={() => nav("audits")}
           />
         )}
 

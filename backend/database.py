@@ -26,6 +26,25 @@ class Database:
     def _init(self):
         with self._conn() as conn:
             conn.executescript("""
+                CREATE TABLE IF NOT EXISTS audits (
+                    id               INTEGER PRIMARY KEY AUTOINCREMENT,
+                    project_id       INTEGER,
+                    title            TEXT NOT NULL DEFAULT '',
+                    client_name      TEXT NOT NULL DEFAULT '',
+                    website_url      TEXT NOT NULL DEFAULT '',
+                    status           TEXT NOT NULL DEFAULT 'draft',
+                    current_step     INTEGER NOT NULL DEFAULT 0,
+                    step0_kickoff    TEXT,
+                    step1_website    TEXT,
+                    step2_crawl      TEXT,
+                    step3_semrush    TEXT,
+                    step4_lighthouse TEXT,
+                    step5_notes      TEXT,
+                    pdf_path         TEXT,
+                    created_at       TEXT DEFAULT (datetime('now')),
+                    updated_at       TEXT DEFAULT (datetime('now'))
+                );
+
                 CREATE TABLE IF NOT EXISTS projects (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     name TEXT NOT NULL,
@@ -176,6 +195,77 @@ class Database:
             if d.get("checks_config"):
                 d["checks_config"] = json.loads(d["checks_config"])
         return d
+
+
+    # ── Audits ────────────────────────────────────────────────────────────────
+
+    def create_audit(self, title: str, client_name: str = "", website_url: str = "",
+                     project_id: int = None) -> int:
+        with self._conn() as conn:
+            cur = conn.execute(
+                "INSERT INTO audits (title, client_name, website_url, project_id) VALUES (?,?,?,?)",
+                (title, client_name, website_url, project_id),
+            )
+            return cur.lastrowid
+
+    def list_audits(self) -> List[Dict]:
+        with self._conn() as conn:
+            rows = conn.execute(
+                "SELECT id, title, client_name, website_url, status, current_step, "
+                "pdf_path, created_at, updated_at FROM audits ORDER BY updated_at DESC"
+            ).fetchall()
+        return [dict(r) for r in rows]
+
+    def get_audit(self, audit_id: int) -> Optional[Dict]:
+        with self._conn() as conn:
+            row = conn.execute("SELECT * FROM audits WHERE id=?", (audit_id,)).fetchone()
+            if not row:
+                return None
+            d = dict(row)
+            for step in ["step0_kickoff", "step1_website", "step2_crawl",
+                         "step3_semrush", "step4_lighthouse", "step5_notes"]:
+                if d.get(step):
+                    try:
+                        d[step] = json.loads(d[step])
+                    except Exception:
+                        pass
+        return d
+
+    def update_audit_step(self, audit_id: int, step: int, data: dict):
+        col_map = {
+            0: "step0_kickoff", 1: "step1_website", 2: "step2_crawl",
+            3: "step3_semrush", 4: "step4_lighthouse", 5: "step5_notes",
+        }
+        col = col_map.get(step)
+        if col is None:
+            return
+        # Update client_name / website_url from kickoff step for display
+        extra = ""
+        params = [json.dumps(data)]
+        if step == 0:
+            extra = ", client_name=?, website_url=?"
+            params += [data.get("client_name", ""), data.get("website_url", "")]
+        status = "in_progress" if step > 0 else "draft"
+        params += [status, audit_id]
+        with self._conn() as conn:
+            conn.execute(
+                f"UPDATE audits SET {col}=?, status=?, current_step=MAX(current_step, ?), "
+                f"updated_at=datetime('now'){extra} WHERE id=?",
+                [json.dumps(data), status, step] + (
+                    [data.get("client_name", ""), data.get("website_url", "")] if step == 0 else []
+                ) + [audit_id],
+            )
+
+    def save_audit_pdf(self, audit_id: int, pdf_path: str):
+        with self._conn() as conn:
+            conn.execute(
+                "UPDATE audits SET pdf_path=?, status='complete', updated_at=datetime('now') WHERE id=?",
+                (pdf_path, audit_id),
+            )
+
+    def delete_audit(self, audit_id: int):
+        with self._conn() as conn:
+            conn.execute("DELETE FROM audits WHERE id=?", (audit_id,))
 
 
 # Type aliases for IDE hints

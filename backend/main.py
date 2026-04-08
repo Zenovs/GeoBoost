@@ -602,6 +602,202 @@ Empfehlung: Dedizierte Landing Pages für Social-Kampagnen erstellen, mit klarem
 Erwarteter Effekt: Steigerung der Social Conversion Rate auf 3–4%."""
 
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# AUDIT WORKFLOW ENDPOINTS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+from audit_parsers import parse_screaming_frog_csv, parse_semrush_csv
+
+
+class CreateAuditRequest(BaseModel):
+    title: str
+    client_name: str = ""
+    website_url: str = ""
+    project_id: Optional[int] = None
+
+
+class UpdateAuditStepRequest(BaseModel):
+    step: int  # 0-5
+    data: dict
+
+
+@app.get("/api/audits")
+def list_audits():
+    return db.list_audits()
+
+
+@app.post("/api/audits")
+def create_audit(req: CreateAuditRequest):
+    audit_id = db.create_audit(
+        title=req.title,
+        client_name=req.client_name,
+        website_url=req.website_url,
+        project_id=req.project_id,
+    )
+    return {"audit_id": audit_id}
+
+
+@app.get("/api/audits/{audit_id}")
+def get_audit(audit_id: int):
+    audit = db.get_audit(audit_id)
+    if not audit:
+        raise HTTPException(404, "Audit nicht gefunden")
+    return audit
+
+
+@app.delete("/api/audits/{audit_id}")
+def delete_audit(audit_id: int):
+    db.delete_audit(audit_id)
+    return {"ok": True}
+
+
+@app.put("/api/audits/{audit_id}/step")
+def update_audit_step(audit_id: int, req: UpdateAuditStepRequest):
+    audit = db.get_audit(audit_id)
+    if not audit:
+        raise HTTPException(404, "Audit nicht gefunden")
+    db.update_audit_step(audit_id, req.step, req.data)
+    return {"ok": True, "step": req.step}
+
+
+@app.post("/api/audits/{audit_id}/upload/screaming-frog")
+async def upload_screaming_frog(audit_id: int, file: UploadFile = File(...)):
+    audit = db.get_audit(audit_id)
+    if not audit:
+        raise HTTPException(404, "Audit nicht gefunden")
+    content = (await file.read()).decode("utf-8", errors="replace")
+    try:
+        parsed = parse_screaming_frog_csv(content)
+    except Exception as e:
+        raise HTTPException(400, f"CSV konnte nicht gelesen werden: {e}")
+
+    # Merge into step2
+    existing = audit.get("step2_crawl") or {}
+    if isinstance(existing, str):
+        try:
+            existing = json.loads(existing)
+        except Exception:
+            existing = {}
+    existing["summary"] = parsed["summary"]
+    existing["issues"] = parsed["issues"]
+    db.update_audit_step(audit_id, 2, existing)
+    return {
+        "ok": True,
+        "summary": parsed["summary"],
+        "issues_count": len(parsed["issues"]),
+    }
+
+
+@app.post("/api/audits/{audit_id}/upload/semrush")
+async def upload_semrush(audit_id: int, file: UploadFile = File(...)):
+    audit = db.get_audit(audit_id)
+    if not audit:
+        raise HTTPException(404, "Audit nicht gefunden")
+    content = (await file.read()).decode("utf-8", errors="replace")
+    try:
+        parsed = parse_semrush_csv(content)
+    except Exception as e:
+        raise HTTPException(400, f"CSV konnte nicht gelesen werden: {e}")
+
+    existing = audit.get("step3_semrush") or {}
+    if isinstance(existing, str):
+        try:
+            existing = json.loads(existing)
+        except Exception:
+            existing = {}
+    existing["semrush_summary"] = parsed["summary"]
+    existing["semrush_issues"] = parsed["issues"]
+    db.update_audit_step(audit_id, 3, existing)
+    return {
+        "ok": True,
+        "summary": parsed["summary"],
+        "issues_count": len(parsed["issues"]),
+    }
+
+
+@app.post("/api/audits/{audit_id}/lighthouse/fetch")
+def fetch_lighthouse(audit_id: int, body: dict):
+    """Fetch PageSpeed data and save to audit step 4."""
+    audit = db.get_audit(audit_id)
+    if not audit:
+        raise HTTPException(404, "Audit nicht gefunden")
+    config = load_config()
+    url = body.get("url", "")
+    strategy = body.get("strategy", "mobile")
+    if not url:
+        raise HTTPException(400, "URL fehlt")
+    ps = PageSpeedAPI(api_key=config.get("pagespeed_api_key", ""))
+    data = ps.get_pagespeed_data(url, strategy)
+    if data.get("error"):
+        raise HTTPException(502, data["error"])
+
+    step_data = {
+        "source": "api",
+        "url_tested": url,
+        "strategy": strategy,
+        "performance": data.get("performance_score"),
+        "accessibility": data.get("accessibility_score"),
+        "best_practices": data.get("best_practices_score"),
+        "seo": data.get("seo_score"),
+        "lcp_value": data.get("lcp", ""),
+        "lcp_rating": data.get("lcp_rating", ""),
+        "cls_value": data.get("cls", ""),
+        "cls_rating": data.get("cls_rating", ""),
+        "fcp_value": data.get("fcp", ""),
+        "fcp_rating": data.get("fcp_rating", ""),
+        "tbt_value": data.get("tbt", ""),
+        "tbt_rating": data.get("tbt_rating", ""),
+        "top_issues": [
+            {"title": a["title"], "description": a.get("explanation_de") or a.get("description", ""),
+             "impact": "hoch" if a["rating"] == "fail" else "mittel"}
+            for a in data.get("failed_audits", [])[:3]
+        ],
+    }
+    existing = audit.get("step4_lighthouse") or {}
+    if isinstance(existing, str):
+        try:
+            existing = json.loads(existing)
+        except Exception:
+            existing = {}
+    existing.update(step_data)
+    db.update_audit_step(audit_id, 4, existing)
+    return step_data
+
+
+@app.post("/api/audits/{audit_id}/report/generate")
+def generate_audit_report(audit_id: int):
+    """Generate PDF report from audit data."""
+    from audit_pdf_generator import AuditPDFGenerator
+    audit = db.get_audit(audit_id)
+    if not audit:
+        raise HTTPException(404, "Audit nicht gefunden")
+    config = load_config()
+    storage = Path(config.get("storage_path", "~/Documents/GeoBoost_Projects")).expanduser()
+    pdf_dir = storage / "audits"
+    pdf_dir.mkdir(parents=True, exist_ok=True)
+    pdf_path = pdf_dir / f"audit_{audit_id}.pdf"
+    template_dir = Path(__file__).parent.parent / "templates"
+    try:
+        gen = AuditPDFGenerator(template_dir=str(template_dir), config=config)
+        gen.generate(audit, str(pdf_path))
+        db.save_audit_pdf(audit_id, str(pdf_path))
+        return {"ok": True, "pdf_path": str(pdf_path)}
+    except Exception as e:
+        raise HTTPException(500, f"PDF-Fehler: {e}")
+
+
+@app.get("/api/audits/{audit_id}/report/pdf")
+def download_audit_pdf(audit_id: int):
+    audit = db.get_audit(audit_id)
+    if not audit or not audit.get("pdf_path"):
+        raise HTTPException(404, "PDF nicht gefunden")
+    pdf_path = Path(audit["pdf_path"])
+    if not pdf_path.exists():
+        raise HTTPException(404, "PDF-Datei nicht vorhanden")
+    return FileResponse(str(pdf_path), media_type="application/pdf",
+                        filename=f"audit_{audit_id}.pdf")
+
+
 if __name__ == "__main__":
     import uvicorn
     print("GeoBoost Backend startet auf http://localhost:8765")

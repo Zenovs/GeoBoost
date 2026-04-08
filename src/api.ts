@@ -183,3 +183,166 @@ export const downloadPdf = (analysisId: number) => {
   a.download = `geoboost_report_${analysisId}.pdf`;
   a.click();
 };
+
+// ── Audits ────────────────────────────────────────────────────────────────────
+
+export interface AuditSummary {
+  id: number;
+  title: string;
+  client_name: string;
+  website_url: string;
+  status: "draft" | "in_progress" | "complete";
+  current_step: number;
+  pdf_path?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Step0Kickoff {
+  client_name: string;
+  website_url: string;
+  analysis_period: string;
+  analysis_date: string;
+  analyst_name: string;
+  responsible_person: string;
+  main_goals: string;
+  notes: string;
+}
+
+export interface ChannelRow { channel: string; sessions: number; pct: number }
+export interface TopPage { page: string; sessions: number }
+
+export interface Step1Website {
+  sessions_total?: number;
+  sessions_organic?: number;
+  sessions_paid?: number;
+  sessions_direct?: number;
+  sessions_social?: number;
+  new_users_total?: number;
+  bounce_rate?: number;
+  avg_session_duration?: string;
+  conversions_total?: number;
+  conversion_rate?: number;
+  channel_breakdown?: ChannelRow[];
+  device_breakdown?: { desktop?: number; mobile?: number; tablet?: number };
+  top_pages?: TopPage[];
+  notes?: string;
+}
+
+export interface CrawlIssue {
+  url: string;
+  status_code: number;
+  title: string;
+  title_length: number;
+  title_issue: string;
+  meta: string;
+  meta_length: number;
+  meta_issue: string;
+  h1: string;
+  h1_issue: string;
+  response_time_ms: number;
+  flags: string[];
+}
+
+export interface CrawlSummary {
+  total_urls: number;
+  ok_200: number;
+  redirects_3xx: number;
+  errors_4xx: number;
+  errors_5xx: number;
+  missing_title: number;
+  title_too_long: number;
+  missing_meta: number;
+  meta_too_long: number;
+  missing_h1: number;
+  slow_pages: number;
+}
+
+export interface Step2Crawl {
+  summary?: CrawlSummary;
+  issues?: CrawlIssue[];
+  notes?: string;
+}
+
+export interface SemrushIssue {
+  issue: string;
+  count: number;
+  severity: "error" | "warning" | "notice";
+  category: string;
+}
+
+export interface SemrushSummary {
+  total_issues: number;
+  errors: number;
+  warnings: number;
+  notices: number;
+}
+
+export interface Step3Semrush {
+  summary?: SemrushSummary;
+  issues?: SemrushIssue[];
+  notes?: string;
+}
+
+export interface Step4Lighthouse {
+  mobile_performance?: number;
+  mobile_accessibility?: number;
+  mobile_best_practices?: number;
+  mobile_seo?: number;
+  desktop_performance?: number;
+  desktop_accessibility?: number;
+  desktop_best_practices?: number;
+  desktop_seo?: number;
+  cwv_lcp?: string;
+  cwv_fid?: string;
+  cwv_cls?: string;
+  notes?: string;
+}
+
+export interface Step5Notes {
+  findings: string;
+  recommendations: string;
+  general_notes: string;
+}
+
+export interface AuditFull extends AuditSummary {
+  step0_kickoff?: Step0Kickoff;
+  step1_website?: Step1Website;
+  step2_crawl?: Step2Crawl;
+  step3_semrush?: Step3Semrush;
+  step4_lighthouse?: Step4Lighthouse;
+  step5_notes?: Step5Notes;
+  project_id?: number;
+}
+
+export const listAudits = () => get<AuditSummary[]>("/audits");
+export const createAudit = (title: string, client_name = "", website_url = "") =>
+  post<{ id: number }>("/audits", { title, client_name, website_url });
+export const getAudit = (id: number) => get<AuditFull>(`/audits/${id}`);
+export const deleteAudit = (id: number) => del<{ ok: boolean }>(`/audits/${id}`);
+export const updateAuditStep = (id: number, step: number, data: object) =>
+  put<{ ok: boolean }>(`/audits/${id}/step`, { step, data });
+
+export const uploadScreamingFrogCsv = async (auditId: number, file: File): Promise<Step2Crawl> => {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await fetch(`${BASE}/audits/${auditId}/upload/screaming-frog`, { method: "POST", body: form });
+  if (!res.ok) throw new Error(`Upload failed: ${res.statusText}`);
+  return res.json();
+};
+
+export const uploadSemrushCsv = async (auditId: number, file: File): Promise<Step3Semrush> => {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await fetch(`${BASE}/audits/${auditId}/upload/semrush`, { method: "POST", body: form });
+  if (!res.ok) throw new Error(`Upload failed: ${res.statusText}`);
+  return res.json();
+};
+
+export const fetchLighthouseForAudit = (auditId: number, websiteUrl: string) =>
+  post<Step4Lighthouse>(`/audits/${auditId}/lighthouse/fetch`, { website_url: websiteUrl });
+
+export const generateAuditPdf = (auditId: number) =>
+  post<{ pdf_path: string }>(`/audits/${auditId}/report/generate`, {});
+
+export const getAuditPdfUrl = (auditId: number) => `${BASE}/audits/${auditId}/report/pdf`;

@@ -1,0 +1,76 @@
+interface Props {
+  current: number;
+  maxReached: number;
+  onNavigate: (step: number) => void;
+}
+
+const STEPS = [
+  { label: "Kickoff" },
+  { label: "Traffic" },
+  { label: "Crawl" },
+  { label: "SemRush" },
+  { label: "PageSpeed" },
+  { label: "Bericht" },
+];
+
+export default function StepIndicator({ current, maxReached, onNavigate }: Props) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 0, marginBottom: 32, overflowX: "auto" }}>
+      {STEPS.map((step, i) => {
+        const done = i < current;
+        const active = i === current;
+        const reachable = i <= maxReached;
+        return (
+          <div key={i} style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
+            <div
+              onClick={() => reachable && onNavigate(i)}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 6,
+                cursor: reachable ? "pointer" : "default",
+                opacity: reachable ? 1 : 0.4,
+              }}
+            >
+              <div style={{
+                width: 34,
+                height: 34,
+                borderRadius: "50%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontWeight: 700,
+                fontSize: 13,
+                background: done ? "var(--green, #16a34a)" : active ? "var(--blue-600, #2563eb)" : "var(--gray-200, #e5e7eb)",
+                color: done || active ? "white" : "var(--gray-500, #6b7280)",
+                boxShadow: active ? "0 0 0 3px rgba(37,99,235,0.25)" : "none",
+                transition: "all 0.2s",
+              }}>
+                {done ? "✓" : i + 1}
+              </div>
+              <span style={{
+                fontSize: 11,
+                fontWeight: active ? 700 : 500,
+                color: active ? "var(--blue-600, #2563eb)" : done ? "var(--green, #16a34a)" : "var(--gray-500, #6b7280)",
+                whiteSpace: "nowrap",
+              }}>
+                {step.label}
+              </span>
+            </div>
+            {i < STEPS.length - 1 && (
+              <div style={{
+                width: 40,
+                height: 2,
+                background: i < current ? "var(--green, #16a34a)" : "var(--gray-200, #e5e7eb)",
+                margin: "0 4px",
+                marginBottom: 20,
+                transition: "background 0.3s",
+              }} />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
