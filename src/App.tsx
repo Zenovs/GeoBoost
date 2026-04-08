@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import "./styles.css";
-import { checkHealth } from "./api";
+import { checkHealth, getVersion } from "./api";
 import Dashboard from "./components/Dashboard";
 import Kickoff from "./components/Kickoff";
 import CheckSelector from "./components/CheckSelector";
@@ -34,11 +34,10 @@ export default function App() {
   const [view, setView] = useState<View>("dashboard");
   const [wizard, setWizard] = useState<WizardState>({});
   const [backendOk, setBackendOk] = useState<boolean | null>(null);
-  // Don't show "offline" until we've waited long enough for Python to start
   const [startupGrace, setStartupGrace] = useState(true);
+  const [version, setVersion] = useState<string | null>(null);
 
   useEffect(() => {
-    // Give Tauri 10 seconds to auto-start the backend before showing the error banner
     const graceTimer = setTimeout(() => setStartupGrace(false), 10_000);
 
     const check = () =>
@@ -50,6 +49,14 @@ export default function App() {
     const interval = setInterval(check, 3000);
     return () => { clearInterval(interval); clearTimeout(graceTimer); };
   }, []);
+
+  useEffect(() => {
+    if (backendOk) {
+      getVersion()
+        .then((v) => setVersion(v.commit ? `${v.commit.slice(0, 7)} · ${v.date.slice(0, 10)}` : null))
+        .catch(() => {});
+    }
+  }, [backendOk]);
 
   const nav = (v: View) => setView(v);
 
@@ -79,14 +86,17 @@ export default function App() {
           ))}
         </nav>
         <div style={{ padding: "16px 20px", borderTop: "1px solid rgba(255,255,255,0.08)" }}>
-          <div className="flex items-center gap-2">
-            <span
-              className={`status-dot ${backendOk === null ? "gray" : backendOk ? "green" : "red"}`}
-            />
-            <span className="text-xs text-muted" style={{ color: "var(--gray-500)" }}>
+          <div className="flex items-center gap-2" style={{ marginBottom: version ? 6 : 0 }}>
+            <span className={`status-dot ${backendOk === null ? "gray" : backendOk ? "green" : "red"}`} />
+            <span className="text-xs" style={{ color: "var(--gray-500)" }}>
               {backendOk === null ? "Verbinde..." : backendOk ? "Backend aktiv" : "Backend offline"}
             </span>
           </div>
+          {version && (
+            <div style={{ fontSize: 11, color: "var(--gray-600)", marginTop: 4, fontFamily: "monospace" }}>
+              v {version}
+            </div>
+          )}
         </div>
       </aside>
 
