@@ -61,19 +61,24 @@ body {
 }
 
 .sidebar-logo {
-  padding: 20px 20px 16px;
+  padding: 18px 20px 16px;
   border-bottom: 1px solid rgba(255,255,255,0.08);
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 .sidebar-logo h1 {
-  font-size: 18px;
+  font-size: 15px;
   font-weight: 700;
   color: white;
   letter-spacing: -0.3px;
+  margin: 0;
 }
 .sidebar-logo span {
   font-size: 11px;
-  color: var(--gray-400);
+  color: var(--gray-500);
   font-weight: 400;
+  display: block;
 }
 
 .sidebar-nav {
@@ -643,3 +648,238 @@ tr:hover td { background: var(--gray-50); }
 }
 .project-card-left { flex: 1; min-width: 0; }
 .project-url { font-size: 12px; color: var(--gray-400); margin-top: 2px; }
+
+/* ── Sidebar polished ───────────────────────────────────────────────────────── */
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.sidebar-logo-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(26,86,219,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #93c5fd;
+  flex-shrink: 0;
+}
+.sidebar-footer {
+  padding: 14px 20px 18px;
+  border-top: 1px solid rgba(255,255,255,0.07);
+}
+.sidebar-status {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 4px;
+}
+.sidebar-status-label {
+  font-size: 12px;
+  color: var(--gray-500);
+}
+.sidebar-version {
+  font-size: 11px;
+  color: var(--gray-600);
+  font-family: monospace;
+}
+
+/* ── Audit List ─────────────────────────────────────────────────────────────── */
+.audit-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.audit-card {
+  background: white;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.audit-card:hover {
+  border-color: var(--primary);
+  box-shadow: 0 2px 12px rgba(26,86,219,0.07);
+}
+.audit-card-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--gray-50);
+  border: 1px solid var(--gray-100);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.audit-card-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--gray-900);
+}
+.audit-status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.audit-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.audit-meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--gray-400);
+}
+.audit-progress-bar {
+  height: 3px;
+  background: var(--gray-100);
+  border-radius: 2px;
+  overflow: hidden;
+  max-width: 320px;
+}
+.audit-progress-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+.audit-pdf-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  background: #f3e8ff;
+  color: #7c3aed;
+}
+.audit-delete-btn {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--gray-300);
+  transition: background 0.15s, color 0.15s;
+}
+.audit-delete-btn:hover { background: var(--red-light); color: var(--red); }
+
+/* ── Create Card ────────────────────────────────────────────────────────────── */
+.create-card {
+  background: white;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius);
+  margin-bottom: 20px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.create-card-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--gray-100);
+  background: var(--gray-50);
+}
+.create-card-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: var(--primary-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary);
+}
+.create-card-body { padding: 20px; }
+
+/* ── Dashboard KPI ──────────────────────────────────────────────────────────── */
+.dashboard-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+.dashboard-kpi-card {
+  background: white;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: var(--shadow);
+}
+.dashboard-kpi-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.dashboard-kpi-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--gray-900);
+  line-height: 1;
+}
+.dashboard-kpi-label {
+  font-size: 12px;
+  color: var(--gray-500);
+  margin-top: 3px;
+}
+
+/* ── Workflow ────────────────────────────────────────────────────────────────── */
+.workflow-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--gray-200);
+}
+.workflow-meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--gray-400);
+}
+.workflow-step-badge {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: var(--primary-light);
+  color: var(--primary);
+}
+.workflow-content {
+  background: white;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius);
+  padding: 28px 32px;
+  min-height: 400px;
+}
+.workflow-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 16px;
+  padding-top: 16px;
+}

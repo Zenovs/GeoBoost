@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { getAudit, updateAuditStep } from "../../api";
 import type { AuditFull } from "../../api";
+import { ArrowLeft, Save, ChevronRight, ChevronLeft, User, Globe } from "lucide-react";
 import StepIndicator from "./StepIndicator";
 import Step0KickoffForm from "./steps/Step0Kickoff";
 import Step1WebsiteForm from "./steps/Step1Website";
@@ -33,7 +34,11 @@ export default function AuditWorkflow({ auditId, onBack }: Props) {
 
   useEffect(() => { load(); }, [auditId]);
 
-  if (!audit) return <div style={{ textAlign: "center", padding: 48, color: "#9ca3af" }}>Wird geladen...</div>;
+  if (!audit) return (
+    <div style={{ display: "flex", justifyContent: "center", padding: 64 }}>
+      <div className="spinner" />
+    </div>
+  );
 
   const saveStep = async (stepNum: number, data: unknown) => {
     setSaving(true);
@@ -53,48 +58,57 @@ export default function AuditWorkflow({ auditId, onBack }: Props) {
     setStep((s) => Math.min(s + 1, 6));
   };
   const goPrev = () => setStep((s) => Math.max(s - 1, 0));
-
   const setStepData = (n: number) => (data: unknown) => { pendingRef.current[n] = data; };
 
   const kickoff = audit.step0_kickoff as KickoffData | undefined;
   const websiteUrl = kickoff?.website_url || audit.website_url;
 
-  // Map stored step data to the new step numbers
   const stepData = [
     audit.step0_kickoff,
     audit.step1_website,
-    audit.step2_crawl,      // Step 2 = Technischer Scan
-    audit.step3_semrush,    // Step 3 = Background Crawl (SF)
-    audit.step4_lighthouse, // Step 4 = SemRush
-    audit.step5_notes,      // Step 5 = Lighthouse
-    (audit as any).step6_report, // Step 6 = Report
+    audit.step2_crawl,
+    audit.step3_semrush,
+    audit.step4_lighthouse,
+    audit.step5_notes,
+    (audit as any).step6_report,
   ];
 
   return (
     <div>
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
-        <button onClick={onBack} style={{ background: "none", border: "1px solid #e5e7eb", borderRadius: 8, padding: "7px 14px", fontSize: 13, cursor: "pointer", color: "#4b5563" }}>
-          ← Zurück
+      <div className="workflow-header">
+        <button className="btn btn-secondary btn-sm" onClick={onBack} style={{ gap: 6 }}>
+          <ArrowLeft size={14} strokeWidth={2} />
+          Zurück
         </button>
-        <div>
-          <h2 style={{ fontSize: 18, fontWeight: 800, margin: 0 }}>{audit.title}</h2>
-          <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 2 }}>
-            {audit.client_name && <span style={{ marginRight: 10 }}>{audit.client_name}</span>}
-            {audit.website_url && <span>{audit.website_url}</span>}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <h2 style={{ fontSize: 17, fontWeight: 700, margin: 0, color: "var(--gray-900)" }}>{audit.title}</h2>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 3 }}>
+            {audit.client_name && (
+              <span className="workflow-meta-item">
+                <User size={11} strokeWidth={2} />
+                {audit.client_name}
+              </span>
+            )}
+            {audit.website_url && (
+              <span className="workflow-meta-item">
+                <Globe size={11} strokeWidth={2} />
+                {audit.website_url}
+              </span>
+            )}
           </div>
         </div>
-        <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
-          {saving && <span style={{ fontSize: 12, color: "#9ca3af" }}>Speichert...</span>}
-          {saveErr && <span style={{ fontSize: 12, color: "#dc2626" }}>{saveErr}</span>}
-          <span style={{ fontSize: 12, color: "#9ca3af" }}>{STEP_LABELS[step]}</span>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          {saving && <span style={{ fontSize: 12, color: "var(--gray-400)" }}>Speichert...</span>}
+          {saveErr && <span style={{ fontSize: 12, color: "var(--red)" }}>{saveErr}</span>}
+          <span className="workflow-step-badge">{STEP_LABELS[step]}</span>
         </div>
       </div>
 
       <StepIndicator current={step} maxReached={audit.current_step} onNavigate={setStep} />
 
       {/* Step content */}
-      <div style={{ background: "white", border: "1px solid #e5e7eb", borderRadius: 14, padding: "28px 32px", minHeight: 400 }}>
+      <div className="workflow-content">
         {step === 0 && <Step0KickoffForm initial={stepData[0] as any} onChange={setStepData(0)} />}
         {step === 1 && <Step1WebsiteForm initial={stepData[1] as any} onChange={setStepData(1)} />}
         {step === 2 && <Step2TechnicalScanForm initial={stepData[2] as any} onChange={setStepData(2)} />}
@@ -117,20 +131,20 @@ export default function AuditWorkflow({ auditId, onBack }: Props) {
       </div>
 
       {/* Navigation */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 20 }}>
-        <button onClick={goPrev} disabled={step === 0}
-          style={{ background: "#f3f4f6", color: "#374151", border: "none", borderRadius: 8, padding: "10px 22px", fontSize: 14, fontWeight: 600, cursor: step === 0 ? "default" : "pointer", opacity: step === 0 ? 0.4 : 1 }}>
-          ← Zurück
+      <div className="workflow-nav">
+        <button onClick={goPrev} disabled={step === 0} className="btn btn-secondary" style={{ gap: 6, opacity: step === 0 ? 0.4 : 1 }}>
+          <ChevronLeft size={15} strokeWidth={2} />
+          Zurück
         </button>
-        <div style={{ display: "flex", gap: 10 }}>
-          <button onClick={() => saveStep(step, pendingRef.current[step] || {})} disabled={saving}
-            style={{ background: "#f3f4f6", color: "#374151", border: "none", borderRadius: 8, padding: "10px 22px", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
-            💾 Speichern
+        <div style={{ display: "flex", gap: 8 }}>
+          <button onClick={() => saveStep(step, pendingRef.current[step] || {})} disabled={saving} className="btn btn-secondary" style={{ gap: 6 }}>
+            <Save size={14} strokeWidth={1.75} />
+            Speichern
           </button>
           {step < 6 && (
-            <button onClick={goNext} disabled={saving}
-              style={{ background: "#2563eb", color: "white", border: "none", borderRadius: 8, padding: "10px 24px", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
-              Weiter →
+            <button onClick={goNext} disabled={saving} className="btn btn-primary" style={{ gap: 6 }}>
+              Weiter
+              <ChevronRight size={15} strokeWidth={2} />
             </button>
           )}
         </div>
