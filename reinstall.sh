@@ -68,7 +68,12 @@ git clone "$REPO_URL" "$REPO_NAME"
 cd "$REPO_DIR"
 success "Geklont: $(git log --oneline -1)"
 
-# ── 3. User-Daten wiederherstellen ────────────────────────────────────────────
+# ── 3. Pfad-Datei schreiben (damit die App backend/main.py findet) ─────────────
+step "App-Pfad registrieren"
+echo "$REPO_DIR" > "$HOME/.geoboost_path"
+success "Pfad gespeichert: $HOME/.geoboost_path → $REPO_DIR"
+
+# ── 4. User-Daten wiederherstellen ────────────────────────────────────────────
 step "Konfiguration wiederherstellen"
 mkdir -p "$REPO_DIR/config"
 
@@ -87,7 +92,7 @@ mkdir -p "$REPO_DIR/config"
     success "credentials/ wiederhergestellt"
 }
 
-# ── 4. Python Virtual Environment ─────────────────────────────────────────────
+# ── 5. Python Virtual Environment ─────────────────────────────────────────────
 step "Python Virtual Environment einrichten"
 
 # Python-Binary ermitteln
@@ -109,7 +114,7 @@ success "venv erstellt"
 "$VENV_PY" -m pip install -r "$REPO_DIR/backend/requirements.txt" -q
 success "Python-Abhängigkeiten installiert"
 
-# ── 5. Node / npm ─────────────────────────────────────────────────────────────
+# ── 6. Node / npm ─────────────────────────────────────────────────────────────
 step "Node-Abhängigkeiten installieren"
 command -v npm &>/dev/null || error "npm nicht gefunden. Node.js installieren."
 success "Node: $(node --version) / npm: $(npm --version)"
@@ -118,7 +123,7 @@ cd "$REPO_DIR"
 npm install --silent
 success "npm install abgeschlossen"
 
-# ── 6. Rust / Cargo prüfen ────────────────────────────────────────────────────
+# ── 7. Rust / Cargo prüfen ────────────────────────────────────────────────────
 step "Rust prüfen"
 if ! command -v cargo &>/dev/null; then
     [[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
@@ -127,13 +132,13 @@ command -v cargo &>/dev/null || error "Rust/Cargo nicht gefunden. Bitte 'rustup'
 export PATH="$HOME/.cargo/bin:$PATH"
 success "Rust: $(rustc --version)"
 
-# ── 7. App bauen ──────────────────────────────────────────────────────────────
+# ── 8. App bauen ──────────────────────────────────────────────────────────────
 step "GeoBoost App bauen (dauert 2–5 Minuten)"
 cd "$REPO_DIR"
 npm run tauri build -- --bundles app 2>&1 | grep -E "Compiling|Finished|error|warning: unused" | tail -20
 success "Build abgeschlossen"
 
-# ── 8. App in /Applications installieren ──────────────────────────────────────
+# ── 9. App in /Applications installieren ──────────────────────────────────────
 step "App in /Applications installieren"
 APP_BUNDLE="$(find "$REPO_DIR/src-tauri/target/release/bundle/macos" -name "*.app" 2>/dev/null | head -1)"
 
@@ -152,7 +157,7 @@ APP_NAME="$(basename "$APP_BUNDLE")"
 cp -r "$APP_BUNDLE" "/Applications/$APP_NAME"
 success "Installiert: /Applications/$APP_NAME"
 
-# ── 9. Fertig ─────────────────────────────────────────────────────────────────
+# ── 10. Fertig ────────────────────────────────────────────────────────────────
 echo -e "\n${GREEN}${BOLD}✓ Neuinstallation abgeschlossen!${RESET}"
 echo -e ""
 echo -e "  App installiert: ${YELLOW}/Applications/$APP_NAME${RESET}"

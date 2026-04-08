@@ -26,6 +26,55 @@ fn find_project_root(start: &PathBuf) -> Option<PathBuf> {
     None
 }
 
+/// Find the project root via all known strategies
+fn resolve_project_root() -> PathBuf {
+    // 1. ~/.geoboost_path file written by install/reinstall script
+    if let Some(home) = std::env::var("HOME").ok().map(PathBuf::from) {
+        let path_file = home.join(".geoboost_path");
+        if let Ok(content) = std::fs::read_to_string(&path_file) {
+            let candidate = PathBuf::from(content.trim());
+            if candidate.join("backend").join("main.py").exists() {
+                eprintln!("[GeoBoost] project root from ~/.geoboost_path: {:?}", candidate);
+                return candidate;
+            }
+        }
+
+        // 2. Common install locations
+        let known = [
+            home.join("Github").join("GeoBoost"),
+            home.join("GeoBoost"),
+            home.join("Documents").join("GeoBoost"),
+            home.join("Desktop").join("GeoBoost"),
+        ];
+        for candidate in &known {
+            if candidate.join("backend").join("main.py").exists() {
+                eprintln!("[GeoBoost] project root from known path: {:?}", candidate);
+                return candidate.clone();
+            }
+        }
+    }
+
+    // 3. Walk up from executable
+    let exe_dir = std::env::current_exe()
+        .ok()
+        .and_then(|p| p.parent().map(PathBuf::from))
+        .unwrap_or_else(|| PathBuf::from("."));
+
+    if let Some(root) = find_project_root(&exe_dir) {
+        return root;
+    }
+
+    // 4. Current working directory
+    if let Ok(cwd) = std::env::current_dir() {
+        if let Some(root) = find_project_root(&cwd) {
+            return root;
+        }
+    }
+
+    eprintln!("[GeoBoost] WARNING: Could not find project root");
+    std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."))
+}
+
 fn find_python(project_root: &PathBuf) -> String {
     let candidates = [
         project_root.join("venv").join("bin").join("python3"),
@@ -125,14 +174,7 @@ fn restart_backend(app_handle: tauri::AppHandle) -> bool {
     thread::sleep(Duration::from_millis(500));
 
     // 2. Find project root and restart
-    let exe_dir = std::env::current_exe()
-        .ok()
-        .and_then(|p| p.parent().map(PathBuf::from))
-        .unwrap_or_else(|| PathBuf::from("."));
-
-    let project_root = find_project_root(&exe_dir)
-        .or_else(|| find_project_root(&std::env::current_dir().unwrap_or(PathBuf::from("."))))
-        .unwrap_or_else(|| std::env::current_dir().unwrap_or(PathBuf::from(".")));
+    let project_root = resolve_project_root();
 
     let child = start_backend(&project_root);
     {
@@ -168,19 +210,7 @@ fn main() {
         .manage(BackendProcess(Mutex::new(None)))
         .plugin(tauri_plugin_shell::init())
         .setup(|app| {
-            // Resolve project root
-            let exe_dir = std::env::current_exe()
-                .ok()
-                .and_then(|p| p.parent().map(PathBuf::from))
-                .unwrap_or_else(|| PathBuf::from("."));
-
-            let project_root = find_project_root(&exe_dir)
-                .or_else(|| find_project_root(&std::env::current_dir().unwrap_or(PathBuf::from("."))))
-                .unwrap_or_else(|| {
-                    eprintln!("[GeoBoost] WARNING: Could not find project root, using cwd");
-                    std::env::current_dir().unwrap_or(PathBuf::from("."))
-                });
-
+            let project_root = resolve_project_root();
             eprintln!("[GeoBoost] project root = {:?}", project_root);
 
             // Kill any leftover backend from a previous session
