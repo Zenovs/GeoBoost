@@ -9,7 +9,7 @@
 
 set -eo pipefail
 
-# Zuerst in ein sicheres Verzeichnis wechseln (falls cwd nicht mehr existiert)
+# Zuerst in ein sicheres Verzeichnis wechseln (falls cwd gelöscht wurde)
 cd "$HOME" 2>/dev/null || true
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
@@ -24,25 +24,31 @@ step()    { echo -e "\n${BOLD}${BLUE}── $* ──${RESET}"; }
 # ── Pfade ─────────────────────────────────────────────────────────────────────
 REPO_URL="https://github.com/Zenovs/GeoBoost.git"
 
-# Wenn via curl|bash gestartet, ist BASH_SOURCE nicht gesetzt → Standard verwenden
-if [[ -n "${BASH_SOURCE[0]:-}" && "${BASH_SOURCE[0]}" != "bash" && -f "${BASH_SOURCE[0]}" ]]; then
-    REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-else
-    # Bekannte Installationspfade prüfen
-    if [[ -f "$HOME/.geoboost_path" ]]; then
-        REPO_DIR="$(cat "$HOME/.geoboost_path")"
-    elif [[ -d "$HOME/Github/GeoBoost" ]]; then
-        REPO_DIR="$HOME/Github/GeoBoost"
-    elif [[ -d "$HOME/GeoBoost" ]]; then
-        REPO_DIR="$HOME/GeoBoost"
-    else
-        REPO_DIR="$HOME/Github/GeoBoost"
-    fi
-fi
+# Zielverzeichnis bestimmen – NIEMALS /tmp oder / verwenden
+_detect_repo_dir() {
+    local script_dir
+    script_dir="$(cd "$(dirname "${BASH_SOURCE[1]:-/tmp}")" 2>/dev/null && pwd)" || script_dir="/tmp"
 
+    # Script liegt in /tmp oder / → nicht das Repo
+    if [[ "$script_dir" == "/tmp" || "$script_dir" == "/" ]]; then
+        if [[ -f "$HOME/.geoboost_path" ]]; then
+            cat "$HOME/.geoboost_path"
+        elif [[ -d "$HOME/Github/GeoBoost" ]]; then
+            echo "$HOME/Github/GeoBoost"
+        elif [[ -d "$HOME/GeoBoost" ]]; then
+            echo "$HOME/GeoBoost"
+        else
+            echo "$HOME/Github/GeoBoost"
+        fi
+    else
+        echo "$script_dir"
+    fi
+}
+
+REPO_DIR="$(_detect_repo_dir)"
 PARENT_DIR="$(dirname "$REPO_DIR")"
 REPO_NAME="$(basename "$REPO_DIR")"
-BACKUP_DIR="${PARENT_DIR}/.geoboost_backup_$(date +%Y%m%d_%H%M%S)"
+BACKUP_DIR="$HOME/.geoboost_backup_$(date +%Y%m%d_%H%M%S)"
 
 echo -e "\n${BOLD}GeoBoost – Saubere Neuinstallation${RESET}"
 echo -e "Verzeichnis: ${YELLOW}$REPO_DIR${RESET}"
