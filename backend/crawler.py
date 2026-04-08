@@ -32,7 +32,11 @@ HEADERS = {
 class WebsiteCrawler:
     def __init__(self, url: str, max_depth: int = 3, max_urls: int = 200):
         self.base_url = url.rstrip("/")
-        self.domain = urlparse(url).netloc
+        parsed = urlparse(url)
+        netloc = parsed.netloc
+        # Normalise: strip www. so www.example.com and example.com both match
+        self.domain = netloc
+        self.domain_bare = netloc[4:] if netloc.startswith("www.") else netloc
         self.max_depth = max_depth
         self.max_urls = max_urls
         self.visited: Set[str] = set()
@@ -231,7 +235,11 @@ class WebsiteCrawler:
     def _is_same_domain(self, url: str) -> bool:
         try:
             parsed = urlparse(url)
-            return parsed.netloc == self.domain or parsed.netloc == ""
+            netloc = parsed.netloc
+            if not netloc:
+                return True
+            bare = netloc[4:] if netloc.startswith("www.") else netloc
+            return bare == self.domain_bare
         except Exception:
             return False
 
@@ -246,7 +254,7 @@ class WebsiteCrawler:
                       for p in pages if 0 < p.get("meta_description_length", 0) < 50]
         long_meta = [{"url": p["url"], "length": p["meta_description_length"]}
                      for p in pages if p.get("meta_description_length", 0) > 160]
-        error_pages = [p["url"] for p in pages if p.get("status", 200) >= 400]
+        error_pages = [p["url"] for p in pages if p.get("status", 200) >= 400 or p.get("status") == 0]
         noindex_pages = [p["url"] for p in pages if p.get("noindex")]
         canonical_issues = [
             {"url": p["url"], "canonical": p.get("canonical_url", "")}
@@ -293,7 +301,7 @@ class WebsiteCrawler:
         total = len(pages)
         ok = sum(1 for p in pages if 200 <= p.get("status", 0) < 300)
         redirects = sum(1 for p in pages if 300 <= p.get("status", 0) < 400)
-        errors = sum(1 for p in pages if p.get("status", 0) >= 400)
+        errors = sum(1 for p in pages if p.get("status", 0) >= 400 or p.get("status") == 0)
         response_times = [p["response_time_ms"] for p in pages if p.get("response_time_ms")]
         avg_response_ms = round(sum(response_times) / len(response_times), 1) if response_times else None
         max_response_ms = max(response_times) if response_times else None

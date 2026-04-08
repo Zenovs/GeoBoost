@@ -91,12 +91,26 @@ class PageSpeedAPI:
         if self.api_key and self.api_key not in ("YOUR_PAGESPEED_API_KEY", ""):
             params["key"] = self.api_key
 
-        try:
-            resp = requests.get(self.BASE_URL, params=params, timeout=60)
-            resp.raise_for_status()
-            data = resp.json()
-        except Exception as e:
-            return {"url": url, "strategy": strategy, "error": str(e)}
+        last_error = ""
+        for attempt in range(3):
+            try:
+                resp = requests.get(self.BASE_URL, params=params, timeout=60)
+                if resp.status_code == 429:
+                    wait = 15 * (attempt + 1)
+                    import time as _time
+                    _time.sleep(wait)
+                    last_error = f"429 Rate limit – warte {wait}s"
+                    continue
+                resp.raise_for_status()
+                data = resp.json()
+                break
+            except Exception as e:
+                last_error = str(e)
+                if attempt < 2:
+                    import time as _time
+                    _time.sleep(5)
+        else:
+            return {"url": url, "strategy": strategy, "error": last_error}
 
         lhr = data.get("lighthouseResult", {})
         cats = lhr.get("categories", {})
