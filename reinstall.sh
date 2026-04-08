@@ -124,15 +124,41 @@ if ! command -v cargo &>/dev/null; then
     [[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
 fi
 command -v cargo &>/dev/null || error "Rust/Cargo nicht gefunden. Bitte 'rustup' installieren: https://rustup.rs"
+export PATH="$HOME/.cargo/bin:$PATH"
 success "Rust: $(rustc --version)"
 
-# ── 7. Fertig ─────────────────────────────────────────────────────────────────
+# ── 7. App bauen ──────────────────────────────────────────────────────────────
+step "GeoBoost App bauen (dauert 2–5 Minuten)"
+cd "$REPO_DIR"
+npm run tauri build -- --bundles app 2>&1 | grep -E "Compiling|Finished|error|warning: unused" | tail -20
+success "Build abgeschlossen"
+
+# ── 8. App in /Applications installieren ──────────────────────────────────────
+step "App in /Applications installieren"
+APP_BUNDLE="$(find "$REPO_DIR/src-tauri/target/release/bundle/macos" -name "*.app" 2>/dev/null | head -1)"
+
+if [[ -z "$APP_BUNDLE" ]]; then
+    error "App-Bundle nicht gefunden. Build fehlgeschlagen?"
+fi
+
+APP_NAME="$(basename "$APP_BUNDLE")"
+
+# Alte Version entfernen falls vorhanden
+[[ -d "/Applications/$APP_NAME" ]] && {
+    warn "Alte Version wird entfernt: /Applications/$APP_NAME"
+    rm -rf "/Applications/$APP_NAME"
+}
+
+cp -r "$APP_BUNDLE" "/Applications/$APP_NAME"
+success "Installiert: /Applications/$APP_NAME"
+
+# ── 9. Fertig ─────────────────────────────────────────────────────────────────
 echo -e "\n${GREEN}${BOLD}✓ Neuinstallation abgeschlossen!${RESET}"
 echo -e ""
+echo -e "  App installiert: ${YELLOW}/Applications/$APP_NAME${RESET}"
 echo -e "  Backup liegt unter: ${YELLOW}$BACKUP_DIR${RESET}"
 echo -e ""
-echo -e "  Starten mit:"
-echo -e "  ${YELLOW}cd $REPO_DIR && ./start.sh${RESET}"
+echo -e "  GeoBoost jetzt über Launchpad oder Spotlight starten."
 echo -e ""
 echo -e "  Oder Dev-Modus:"
 echo -e "  ${YELLOW}cd $REPO_DIR && npm run tauri dev${RESET}"
