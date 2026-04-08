@@ -119,30 +119,98 @@ export default function AnalysisProgress({ analysisId, onDone, onNewAnalysis }: 
       </div>
 
       {/* Progress Card */}
-      <div className="card mb-4">
-        <div className="card-body">
-          <div className="flex justify-between items-center mb-2">
-            <div className="flex items-center gap-2">
-              {!done && !error && <div className="status-dot orange" />}
-              {done && !error && <div className="status-dot green" />}
-              {error && <div className="status-dot red" />}
-              <span className="font-semibold">
-                {status ? (STEP_LABELS[status.step] || status.step) : "Starte..."}
+      {!done && !error ? (
+        <div className="analysis-running-card">
+          <div className="analysis-orb">
+            <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+              <circle cx="16" cy="16" r="14" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" />
+              <path d="M8 16 C8 11.6 11.6 8 16 8 C20.4 8 24 11.6 24 16"
+                stroke="white" strokeWidth="2" strokeLinecap="round"
+                style={{ animation: "spin 1.2s linear infinite", transformOrigin: "16px 16px" }} />
+              <circle cx="16" cy="8" r="2" fill="white" opacity="0.9"
+                style={{ animation: "spin 1.2s linear infinite", transformOrigin: "16px 16px" }} />
+            </svg>
+          </div>
+
+          <div style={{ position: "relative", zIndex: 1 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "1.5px", opacity: 0.7, marginBottom: 8 }}>
+              Analyse läuft
+            </div>
+            <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 6 }}>
+              {status ? (STEP_LABELS[status.step] || status.step) : "Starte..."}
+              <span className="analysis-dots">
+                <span /><span /><span />
               </span>
             </div>
-            <span className="text-sm text-muted">{progress}%</span>
+            {status?.message && (
+              <div style={{ fontSize: 13, opacity: 0.75, marginBottom: 20, maxWidth: 480, margin: "0 auto 20px" }}>
+                {status.message}
+              </div>
+            )}
+
+            {/* Progress bar */}
+            <div style={{ maxWidth: 400, margin: "0 auto 16px", position: "relative" }}>
+              <div style={{ background: "rgba(255,255,255,0.15)", borderRadius: 4, height: 6, overflow: "hidden" }}>
+                <div style={{
+                  height: "100%",
+                  width: `${progress}%`,
+                  background: "rgba(255,255,255,0.85)",
+                  borderRadius: 4,
+                  transition: "width 0.6s cubic-bezier(0.4,0,0.2,1)",
+                  position: "relative",
+                  overflow: "hidden",
+                }}>
+                  <div style={{
+                    position: "absolute", top: 0, left: "-100%", right: 0, bottom: 0,
+                    background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent)",
+                    animation: "shimmer 1.8s infinite",
+                  }} />
+                </div>
+              </div>
+              <div style={{ fontSize: 12, opacity: 0.7, marginTop: 6, textAlign: "right" }}>{progress}%</div>
+            </div>
+
+            {/* Step pills */}
+            <div className="analysis-step-pills">
+              {Object.entries(STEP_LABELS).filter(([k]) => k !== "start" && k !== "done" && k !== "error").map(([key, label]) => {
+                const stepOrder = ["crawling","pagespeed","speedtest","ga4","ai","pdf"];
+                const currentIdx = stepOrder.indexOf(status?.step ?? "");
+                const thisIdx = stepOrder.indexOf(key);
+                const isDone = thisIdx < currentIdx;
+                const isActive = key === status?.step;
+                return (
+                  <span key={key} className={`analysis-step-pill ${isActive ? "active" : ""} ${isDone ? "done" : ""}`}>
+                    {isDone ? "✓ " : ""}{label}
+                  </span>
+                );
+              })}
+            </div>
           </div>
-          <div className="progress-bar">
-            <div className="progress-fill" style={{ width: `${progress}%` }} />
-          </div>
-          {status?.message && (
-            <p className="text-sm text-muted mt-2">{status.message}</p>
-          )}
-          {error && (
-            <div className="alert alert-error mt-3">{error}</div>
-          )}
         </div>
-      </div>
+      ) : done ? (
+        <div className="card mb-4">
+          <div className="card-body">
+            <div className="flex items-center gap-3">
+              <div className="status-dot green" />
+              <div>
+                <div className="font-semibold">Analyse abgeschlossen</div>
+                <div className="text-sm text-muted mt-1">Alle Schritte erfolgreich durchgeführt</div>
+              </div>
+              <div style={{ marginLeft: "auto" }}>
+                <div className="progress-bar" style={{ width: 120 }}>
+                  <div className="progress-fill" style={{ width: "100%" }} />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="card mb-4">
+          <div className="card-body">
+            <div className="alert alert-error">{error}</div>
+          </div>
+        </div>
+      )}
 
       {/* Log */}
       {log.length > 0 && (
