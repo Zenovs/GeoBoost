@@ -7,7 +7,10 @@
 #    cd ~/Github/GeoBoost && bash reinstall.sh
 # ═══════════════════════════════════════════════════════════════════════════════
 
-set -euo pipefail
+set -eo pipefail
+
+# Zuerst in ein sicheres Verzeichnis wechseln (falls cwd nicht mehr existiert)
+cd "$HOME" 2>/dev/null || true
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
 BLUE='\033[0;34m'; BOLD='\033[1m'; RESET='\033[0m'
@@ -19,11 +22,27 @@ error()   { echo -e "${RED}[✗]${RESET} $*"; exit 1; }
 step()    { echo -e "\n${BOLD}${BLUE}── $* ──${RESET}"; }
 
 # ── Pfade ─────────────────────────────────────────────────────────────────────
-REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_URL="https://github.com/Zenovs/GeoBoost.git"
+
+# Wenn via curl|bash gestartet, ist BASH_SOURCE nicht gesetzt → Standard verwenden
+if [[ -n "${BASH_SOURCE[0]:-}" && "${BASH_SOURCE[0]}" != "bash" && -f "${BASH_SOURCE[0]}" ]]; then
+    REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+else
+    # Bekannte Installationspfade prüfen
+    if [[ -f "$HOME/.geoboost_path" ]]; then
+        REPO_DIR="$(cat "$HOME/.geoboost_path")"
+    elif [[ -d "$HOME/Github/GeoBoost" ]]; then
+        REPO_DIR="$HOME/Github/GeoBoost"
+    elif [[ -d "$HOME/GeoBoost" ]]; then
+        REPO_DIR="$HOME/GeoBoost"
+    else
+        REPO_DIR="$HOME/Github/GeoBoost"
+    fi
+fi
+
 PARENT_DIR="$(dirname "$REPO_DIR")"
 REPO_NAME="$(basename "$REPO_DIR")"
 BACKUP_DIR="${PARENT_DIR}/.geoboost_backup_$(date +%Y%m%d_%H%M%S)"
-REPO_URL="https://github.com/Zenovs/GeoBoost.git"
 
 echo -e "\n${BOLD}GeoBoost – Saubere Neuinstallation${RESET}"
 echo -e "Verzeichnis: ${YELLOW}$REPO_DIR${RESET}"
