@@ -10,6 +10,8 @@ export default function Dashboard({ onNewAnalysis, onViewAnalysis }: Props) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const load = () => {
     setLoading(true);
@@ -21,11 +23,24 @@ export default function Dashboard({ onNewAnalysis, onViewAnalysis }: Props) {
 
   useEffect(() => { load(); }, []);
 
-  const handleDelete = async (e: React.MouseEvent, id: number) => {
+  const handleDeleteClick = (e: React.MouseEvent, id: number) => {
     e.stopPropagation();
-    if (!confirm("Projekt und alle Analysen löschen?")) return;
-    await deleteProject(id);
-    load();
+    setConfirmDeleteId(id);
+  };
+
+  const handleDeleteConfirm = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!confirmDeleteId) return;
+    setDeleting(true);
+    try {
+      await deleteProject(confirmDeleteId);
+      setConfirmDeleteId(null);
+      load();
+    } catch (err: unknown) {
+      setError((err as Error).message);
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const fmt = (d?: string) =>
@@ -95,13 +110,33 @@ export default function Dashboard({ onNewAnalysis, onViewAnalysis }: Props) {
                   <div className="text-xs text-muted">Letzte Analyse</div>
                   <div className="text-sm font-medium">{fmt(proj.last_analysis)}</div>
                 </div>
-                <button
-                  className="btn btn-ghost btn-sm"
-                  onClick={(e) => handleDelete(e, proj.id)}
-                  title="Projekt löschen"
-                >
-                  🗑
-                </button>
+                {confirmDeleteId === proj.id ? (
+                  <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                    <span className="text-xs text-muted">Löschen?</span>
+                    <button
+                      className="btn btn-sm"
+                      style={{ background: "var(--red)", color: "white", padding: "4px 10px" }}
+                      onClick={handleDeleteConfirm}
+                      disabled={deleting}
+                    >
+                      {deleting ? "..." : "Ja"}
+                    </button>
+                    <button
+                      className="btn btn-ghost btn-sm"
+                      onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(null); }}
+                    >
+                      Nein
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    onClick={(e) => handleDeleteClick(e, proj.id)}
+                    title="Projekt löschen"
+                  >
+                    🗑
+                  </button>
+                )}
               </div>
             </div>
           ))}

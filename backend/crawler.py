@@ -330,4 +330,4 @@ class WebsiteCrawler:
         deductions += (len(issues["multiple_h1"]) / total) * 10
         deductions += (len(issues["error_pages"]) / total) * 20
         deductions += min(issues["images_without_alt_total"] / max(total, 1), 1) * 15
-        return max(0, round(100 - deductions * 100))
+        return max(0, round(100 - deductions))
