@@ -1,8 +1,8 @@
 import { useEffect, useState, useRef } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import {
   getAnalysisStatus,
   getAnalysisResults,
-  downloadPdf,
   type AnalysisStatus,
   type AnalysisResults,
 } from "../api";
@@ -104,8 +104,8 @@ export default function AnalysisProgress({ analysisId, onDone, onNewAnalysis }: 
         {done && (
           <div className="flex gap-2">
             {results?.results?.pdf_path && (
-              <button className="btn btn-primary" onClick={() => downloadPdf(analysisId)}>
-                📄 PDF herunterladen
+              <button className="btn btn-primary" onClick={() => invoke("open_pdf", { path: results?.results?.pdf_path ?? "" })}>
+                📄 PDF öffnen
               </button>
             )}
             <button className="btn btn-secondary" onClick={onNewAnalysis}>
@@ -703,8 +703,8 @@ export default function AnalysisProgress({ analysisId, onDone, onNewAnalysis }: 
               <div>
                 <strong>PDF erfolgreich erstellt.</strong>{" "}
                 <button className="btn btn-secondary btn-sm" style={{ marginLeft: 8 }}
-                  onClick={() => downloadPdf(analysisId)}>
-                  PDF herunterladen
+                  onClick={() => invoke("open_pdf", { path: results?.results?.pdf_path ?? "" })}>
+                  PDF öffnen
                 </button>
               </div>
             </div>
