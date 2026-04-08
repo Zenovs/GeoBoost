@@ -491,9 +491,15 @@ tr:last-child td { border-bottom: none; }
 }
 .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 
-/* First page: zero margin so cover bleeds to the edge */
+/* Page margins – schnyder: zero on all pages so black background bleeds to edge */
+{% if theme_name == "schnyder" %}
+@page        { margin: 0; background: #000000; }
+@page :first { margin: 0; background: #000000; }
+.page { padding: 52px 64px; }
+{% else %}
 @page        { margin: 1.5cm 1.8cm; @bottom-right { content: "{{ company }} · Seite " counter(page); font-size: 10px; color: var(--footer-color); } }
 @page :first { margin: 0; @bottom-right { content: none; } }
+{% endif %}
 </style>
 </head>
 <body>
