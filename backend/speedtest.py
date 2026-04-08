@@ -268,7 +268,7 @@ def _detect_issues(result: Dict[str, Any]) -> List[Dict[str, Any]]:
 
 
 class SpeedTester:
-    def __init__(self, urls: List[str], runs: int = 3):
+    def __init__(self, urls: List[str], runs: int = 5):
         self.urls = urls[:10]  # max 10 URLs
         self.runs = runs
         self.session = requests.Session()

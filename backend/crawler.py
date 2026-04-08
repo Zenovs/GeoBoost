@@ -30,7 +30,8 @@ HEADERS = {
 
 
 class WebsiteCrawler:
-    def __init__(self, url: str, max_depth: int = 3, max_urls: int = 200):
+    def __init__(self, url: str, max_depth: int = 5, max_urls: int = 500,
+                 politeness_delay: float = 0.3):
         self.base_url = url.rstrip("/")
         parsed = urlparse(url)
         netloc = parsed.netloc
@@ -39,6 +40,7 @@ class WebsiteCrawler:
         self.domain_bare = netloc[4:] if netloc.startswith("www.") else netloc
         self.max_depth = max_depth
         self.max_urls = max_urls
+        self.politeness_delay = politeness_delay  # seconds between requests
         self.visited: Set[str] = set()
         self.pages: List[Dict[str, Any]] = []
         self.log: List[str] = []
@@ -71,9 +73,13 @@ class WebsiteCrawler:
 
         self.visited.add(url)
 
+        # Politeness delay – avoids rate limiting and gives the server breathing room
+        if len(self.pages) > 0 and self.politeness_delay > 0:
+            time.sleep(self.politeness_delay)
+
         try:
             t_start = time.perf_counter()
-            resp = self.session.get(url, timeout=10, allow_redirects=True)
+            resp = self.session.get(url, timeout=15, allow_redirects=True)
             response_time_ms = round((time.perf_counter() - t_start) * 1000, 1)
 
             final_url = resp.url
@@ -157,6 +163,16 @@ class WebsiteCrawler:
                 else:
                     external_links.append(abs_href)
 
+            # ── Thin content detection ────────────────────────────────────────
+            thin_content = word_count < 300 and not noindex
+
+            # ── Redirect detection ────────────────────────────────────────────
+            was_redirected = (resp.url.rstrip("/") != url.rstrip("/"))
+
+            # ── Open Graph / Social tags ──────────────────────────────────────
+            og_title = (soup.find("meta", property="og:title") or {}).get("content", "") if soup.find("meta", property="og:title") else ""
+            og_description = (soup.find("meta", property="og:description") or {}).get("content", "") if soup.find("meta", property="og:description") else ""
+
             page_data = {
                 "url": final_url,
                 "status": status,
@@ -174,11 +190,15 @@ class WebsiteCrawler:
                 "image_count": img_count,
                 "images_without_alt": imgs_without_alt,
                 "word_count": word_count,
+                "thin_content": thin_content,
                 "schema_types": schema_types,
                 "has_structured_data": len(schema_types) > 0,
                 "internal_links_count": len(set(internal_links)),
                 "external_links_count": len(set(external_links)),
                 "page_size_kb": round(len(resp.content) / 1024, 1),
+                "was_redirected": was_redirected,
+                "og_title": og_title,
+                "og_description": og_description,
                 "depth": depth,
             }
 
@@ -200,8 +220,8 @@ class WebsiteCrawler:
             if canonical_url and not page_data["canonical_self"]:
                 self.log.append(f"ℹ Canonical zeigt auf andere URL: {canonical_url}")
 
-            # Crawl internal links
-            for link in list(set(internal_links))[:50]:
+            # Crawl internal links (no artificial cap – max_urls controls total)
+            for link in list(set(internal_links)):
                 self._crawl_page(link, depth + 1)
 
         except Exception as e:
@@ -268,6 +288,20 @@ class WebsiteCrawler:
             for p in pages
             if p.get("response_time_ms") and p["response_time_ms"] > 1000
         ]
+        thin_content_pages = [
+            {"url": p["url"], "word_count": p.get("word_count", 0)}
+            for p in pages
+            if p.get("thin_content") and not p.get("error")
+        ]
+        redirected_pages = [
+            {"url": p["url"]}
+            for p in pages
+            if p.get("was_redirected")
+        ]
+        missing_og = [
+            p["url"] for p in pages
+            if not p.get("og_title") and not p.get("noindex") and not p.get("error")
+        ]
 
         # Duplicate titles
         titles_seen: Dict[str, List[str]] = {}
@@ -295,6 +329,9 @@ class WebsiteCrawler:
             "images_without_alt_total": imgs_no_alt,
             "pages_with_structured_data": pages_with_schema,
             "slow_pages": slow_pages,
+            "thin_content_pages": thin_content_pages,
+            "redirected_pages": redirected_pages,
+            "missing_og_tags": missing_og,
         }
 
     def _build_summary(self, pages: List[Dict], issues: Dict) -> Dict[str, Any]:
@@ -321,6 +358,9 @@ class WebsiteCrawler:
             "canonical_issues": len(issues["canonical_issues"]),
             "pages_with_structured_data": len(issues["pages_with_structured_data"]),
             "slow_pages_count": len(issues["slow_pages"]),
+            "thin_content_pages": len(issues["thin_content_pages"]),
+            "redirected_pages": len(issues["redirected_pages"]),
+            "missing_og_tags": len(issues["missing_og_tags"]),
             "avg_response_ms": avg_response_ms,
             "max_response_ms": max_response_ms,
             "seo_score": self._calc_seo_score(pages, issues),

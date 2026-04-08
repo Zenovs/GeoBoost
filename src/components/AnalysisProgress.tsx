@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   getAnalysisStatus,
   getAnalysisResults,
@@ -422,87 +422,178 @@ export default function AnalysisProgress({ analysisId, onDone, onNewAnalysis }: 
             );
           })()}
 
-          {/* Crawler Summary */}
+          {/* Crawler – Customer-friendly problem cards */}
           {(() => {
             const crawlerData = results.results.crawler as Record<string, unknown> | undefined;
             const summary = crawlerData?.summary as Record<string, number> | undefined;
             const issues = crawlerData?.issues as Record<string, unknown[]> | undefined;
             if (!summary) return null;
 
-            const IssueList = ({ items, label, renderItem }: {
-              items: unknown[]; label: string; renderItem: (item: unknown, i: number) => React.ReactNode;
-            }) => items.length === 0 ? null : (
-              <div style={{ marginBottom: 12 }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: "var(--gray-600)", marginBottom: 4 }}>{label} ({items.length})</div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-                  {items.slice(0, 10).map((item, i) => renderItem(item, i))}
-                  {items.length > 10 && <span style={{ fontSize: 11, color: "var(--gray-400)" }}>+{items.length - 10} weitere</span>}
-                </div>
-              </div>
-            );
+            const seoScore = summary.seo_score ?? 0;
+            const scoreColor = seoScore >= 80 ? "var(--green)" : seoScore >= 50 ? "var(--orange)" : "var(--red)";
+
+            type CrawlerProblem = {
+              id: string; priority: "hoch" | "mittel" | "niedrig";
+              title: string; what: string; why: string;
+              urls?: string[]; count?: number;
+            };
+
+            const problems: CrawlerProblem[] = [];
+
+            const errorPages = (issues?.error_pages ?? []) as string[];
+            if (errorPages.length > 0) problems.push({
+              id: "errors", priority: "hoch",
+              title: `${errorPages.length} Seite${errorPages.length > 1 ? "n" : ""} nicht erreichbar (Fehler 404/500)`,
+              what: "Besucher und Google treffen auf Seiten, die nicht mehr existieren oder einen Fehler haben.",
+              why: "Google wertet dies als Qualitätsmangel. Besucher verlassen die Website frustriert.",
+              urls: errorPages.slice(0, 5),
+            });
+
+            if ((summary.missing_titles ?? 0) > 0) {
+              const urls = (issues?.missing_title ?? []) as string[];
+              problems.push({
+                id: "titles", priority: "hoch",
+                title: `${summary.missing_titles} Seite${summary.missing_titles > 1 ? "n" : ""} ohne Seitentitel`,
+                what: "Der Seitentitel (blauer Link in Google-Suchergebnissen) fehlt auf diesen Seiten.",
+                why: "Ohne Titel zeigt Google einen schlechten oder gar keinen Eintrag in den Suchergebnissen. Weniger Klicks, weniger Besucher.",
+                urls: urls.slice(0, 5),
+              });
+            }
+
+            if ((summary.missing_meta ?? 0) > 0) {
+              const urls = (issues?.missing_meta_description ?? []) as string[];
+              problems.push({
+                id: "meta", priority: "hoch",
+                title: `${summary.missing_meta} Seite${summary.missing_meta > 1 ? "n" : ""} ohne Kurzbeschreibung (Meta-Description)`,
+                what: "Die kurze Textvorschau unter dem Google-Suchresultat fehlt auf diesen Seiten.",
+                why: "Google generiert dann selbst einen Text – oft unpassend. Eine gute Beschreibung erhöht die Klickrate um 5–20%.",
+                urls: urls.slice(0, 5),
+              });
+            }
+
+            if ((summary.images_without_alt ?? 0) > 0) problems.push({
+              id: "alt", priority: "mittel",
+              title: `${summary.images_without_alt} Bilder ohne Bildbeschreibung`,
+              what: "Diese Bilder haben keinen beschreibenden Text (Alt-Text).",
+              why: "Google kann Bilder ohne Beschreibung nicht verstehen und indexiert sie nicht. Ausserdem ist dies ein Barrierefreiheitsproblem für sehbehinderte Nutzer.",
+              count: summary.images_without_alt,
+            });
+
+            if ((summary.slow_pages_count ?? 0) > 0) {
+              const slowList = (issues?.slow_pages ?? []) as Array<{url: string; response_time_ms: number}>;
+              problems.push({
+                id: "slow", priority: "mittel",
+                title: `${summary.slow_pages_count} Seite${summary.slow_pages_count > 1 ? "n" : ""} mit langer Ladezeit (über 1 Sekunde)`,
+                what: `Der Server braucht über 1 Sekunde, um die Seite zu liefern. Ø Serverantwort: ${summary.avg_response_ms} ms.`,
+                why: "Jede Sekunde Wartezeit reduziert die Conversions um ca. 7%. Google bevorzugt schnelle Seiten.",
+                urls: slowList.slice(0, 3).map(p => `${p.url} (${p.response_time_ms?.toFixed(0)} ms)`),
+              });
+            }
+
+            if ((summary.duplicate_titles ?? 0) > 0) {
+              const dups = (issues?.duplicate_titles ?? []) as Array<{title: string; urls: string[]}>;
+              problems.push({
+                id: "dup", priority: "mittel",
+                title: `${summary.duplicate_titles} Gruppen mit identischen Seitentiteln`,
+                what: "Mehrere Seiten haben exakt denselben Titel.",
+                why: "Google kann nicht entscheiden, welche Seite relevanter ist, und zeigt im Zweifel keine davon gut an.",
+                urls: dups.slice(0, 3).map(d => `"${d.title.slice(0, 50)}" – ${d.urls.length} Seiten`),
+              });
+            }
+
+            const thinPages = (issues?.thin_content_pages ?? []) as Array<{url: string; word_count: number}>;
+            if (thinPages.length > 0) problems.push({
+              id: "thin", priority: "niedrig",
+              title: `${thinPages.length} Seite${thinPages.length > 1 ? "n" : ""} mit zu wenig Inhalt (unter 300 Wörter)`,
+              what: "Diese Seiten haben zu wenig Text.",
+              why: "Google wertet inhaltsschwache Seiten schlechter. Besucher finden nicht genug Informationen.",
+              urls: thinPages.slice(0, 3).map(p => `${p.url} (${p.word_count} Wörter)`),
+            });
+
+            const priorityColor = (p: string) =>
+              p === "hoch" ? "var(--red)" : p === "mittel" ? "var(--orange)" : "var(--gray-400)";
+            const priorityBg = (p: string) =>
+              p === "hoch" ? "#fee2e2" : p === "mittel" ? "#fff7ed" : "#f3f4f6";
 
             return (
               <div className="card mb-4">
-                <div className="card-header"><h3>Crawl-Ergebnisse</h3></div>
+                <div className="card-header">
+                  <h3>Website-Analyse</h3>
+                  <div className="flex items-center gap-2">
+                    <span style={{ fontSize: 12, color: "var(--gray-500)" }}>SEO Score</span>
+                    <span style={{ fontSize: 16, fontWeight: 700, color: scoreColor }}>{seoScore}/100</span>
+                    <span className="badge badge-blue">{summary.total_pages} Seiten gecrawlt</span>
+                  </div>
+                </div>
                 <div className="card-body">
-                  <div className="table-container mb-4">
-                    <table>
-                      <thead><tr><th>Check</th><th>Wert</th></tr></thead>
-                      <tbody>
-                        <tr><td>Seiten gecrawlt</td><td>{summary.total_pages}</td></tr>
-                        <tr><td>Fehlerseiten (4xx/5xx)</td><td><span className={summary.pages_error > 0 ? "text-red font-semibold" : ""}>{summary.pages_error}</span></td></tr>
-                        <tr><td>Fehlende Titles</td><td><span className={summary.missing_titles > 0 ? "text-orange font-semibold" : ""}>{summary.missing_titles}</span></td></tr>
-                        <tr><td>Fehlende Meta-Descriptions</td><td><span className={summary.missing_meta > 0 ? "text-orange" : ""}>{summary.missing_meta}</span></td></tr>
-                        <tr><td>Bilder ohne Alt-Text</td><td><span className={summary.images_without_alt > 0 ? "text-orange" : ""}>{summary.images_without_alt}</span></td></tr>
-                        <tr><td>Doppelte Titles</td><td><span className={summary.duplicate_titles > 0 ? "text-orange" : ""}>{summary.duplicate_titles ?? 0}</span></td></tr>
-                        <tr><td>Seiten mit strukturierten Daten</td><td>{summary.pages_with_structured_data ?? 0}</td></tr>
-                        <tr><td>Langsame Seiten (&gt;1s)</td><td><span className={summary.slow_pages_count > 0 ? "text-orange" : ""}>{summary.slow_pages_count ?? 0}</span></td></tr>
-                        <tr><td>Ø Ladezeit (Crawler)</td><td>{summary.avg_response_ms != null ? `${summary.avg_response_ms} ms` : "–"}</td></tr>
-                      </tbody>
-                    </table>
+                  {/* Quick overview row */}
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginBottom: 20 }}>
+                    {[
+                      { label: "Fehlerseiten", val: summary.pages_error ?? 0, bad: (summary.pages_error ?? 0) > 0 },
+                      { label: "Ohne Titel", val: summary.missing_titles ?? 0, bad: (summary.missing_titles ?? 0) > 0 },
+                      { label: "Ohne Beschreibung", val: summary.missing_meta ?? 0, bad: (summary.missing_meta ?? 0) > 0 },
+                      { label: "Bilder ohne Alt-Text", val: summary.images_without_alt ?? 0, bad: (summary.images_without_alt ?? 0) > 0 },
+                      { label: "Langsame Seiten", val: summary.slow_pages_count ?? 0, bad: (summary.slow_pages_count ?? 0) > 0 },
+                      { label: "Doppelte Titel", val: summary.duplicate_titles ?? 0, bad: (summary.duplicate_titles ?? 0) > 0 },
+                      { label: "Dünner Inhalt", val: summary.thin_content_pages ?? 0, bad: (summary.thin_content_pages ?? 0) > 0 },
+                      { label: "Mit Schema-Daten", val: summary.pages_with_structured_data ?? 0, bad: false },
+                    ].map(({ label, val, bad }) => (
+                      <div key={label} style={{ background: bad && val > 0 ? "#fff7ed" : "var(--gray-50, #f9fafb)", borderRadius: 6, padding: "10px 12px", textAlign: "center" }}>
+                        <div style={{ fontSize: 20, fontWeight: 700, color: bad && val > 0 ? "var(--orange)" : "var(--gray-700)" }}>{val}</div>
+                        <div style={{ fontSize: 11, color: "var(--gray-500)", marginTop: 2 }}>{label}</div>
+                      </div>
+                    ))}
                   </div>
 
-                  {issues && (
+                  {/* Problem cards */}
+                  {problems.length > 0 && (
                     <div>
-                      <IssueList
-                        items={issues.missing_title ?? []}
-                        label="Seiten ohne Title-Tag"
-                        renderItem={(url, i) => (
-                          <span key={i} style={{ fontSize: 11, background: "var(--red-light, #fee2e2)", color: "var(--red)", padding: "2px 6px", borderRadius: 4 }}>
-                            {String(url).replace(/^https?:\/\/[^/]+/, "").slice(0, 40) || "/"}
-                          </span>
-                        )}
-                      />
-                      <IssueList
-                        items={issues.missing_meta_description ?? []}
-                        label="Seiten ohne Meta-Description"
-                        renderItem={(url, i) => (
-                          <span key={i} style={{ fontSize: 11, background: "#fff7ed", color: "var(--orange)", padding: "2px 6px", borderRadius: 4 }}>
-                            {String(url).replace(/^https?:\/\/[^/]+/, "").slice(0, 40) || "/"}
-                          </span>
-                        )}
-                      />
-                      <IssueList
-                        items={(issues.title_too_long ?? []) as Array<{url: string; length: number; title: string}>}
-                        label="Title zu lang (&gt;60 Zeichen)"
-                        renderItem={(item: unknown, i) => {
-                          const it = item as {url: string; length: number; title: string};
-                          return (
-                            <span key={i} title={it.title} style={{ fontSize: 11, background: "#fff7ed", color: "var(--orange)", padding: "2px 6px", borderRadius: 4 }}>
-                              {String(it.url).replace(/^https?:\/\/[^/]+/, "").slice(0, 35) || "/"} ({it.length}Z)
-                            </span>
-                          );
-                        }}
-                      />
-                      <IssueList
-                        items={issues.error_pages ?? []}
-                        label="Fehlerseiten (4xx/5xx)"
-                        renderItem={(url, i) => (
-                          <span key={i} style={{ fontSize: 11, background: "#fee2e2", color: "var(--red)", padding: "2px 6px", borderRadius: 4 }}>
-                            {String(url).replace(/^https?:\/\/[^/]+/, "").slice(0, 40) || "/"}
-                          </span>
-                        )}
-                      />
+                      <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 10, color: "var(--gray-700)" }}>
+                        Gefundene Probleme ({problems.length})
+                      </div>
+                      {problems.map((prob) => (
+                        <div key={prob.id} style={{
+                          border: "1px solid var(--gray-200)",
+                          borderLeft: `4px solid ${priorityColor(prob.priority)}`,
+                          borderRadius: "0 8px 8px 0",
+                          padding: "12px 16px",
+                          marginBottom: 10,
+                          background: "white",
+                        }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                            <span style={{
+                              fontSize: 10, fontWeight: 700, textTransform: "uppercase",
+                              background: priorityBg(prob.priority), color: priorityColor(prob.priority),
+                              padding: "2px 8px", borderRadius: 4,
+                            }}>{prob.priority}</span>
+                            <strong style={{ fontSize: 13 }}>{prob.title}</strong>
+                          </div>
+                          <div style={{ fontSize: 12, color: "var(--gray-700)", marginBottom: 4 }}>
+                            <strong>Was passiert:</strong> {prob.what}
+                          </div>
+                          <div style={{ fontSize: 12, color: "var(--gray-600)", marginBottom: prob.urls?.length ? 6 : 0 }}>
+                            <strong>Warum wichtig:</strong> {prob.why}
+                          </div>
+                          {prob.urls && prob.urls.length > 0 && (
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                              {prob.urls.map((u, i) => (
+                                <span key={i} style={{
+                                  fontSize: 11, background: "#f3f4f6", color: "var(--gray-600)",
+                                  padding: "2px 8px", borderRadius: 4, fontFamily: "monospace",
+                                }}>
+                                  {u.replace(/^https?:\/\/[^/]+/, "") || u}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {problems.length === 0 && (
+                    <div className="alert alert-success">
+                      <span>✓</span>
+                      <div>Keine kritischen SEO-Probleme gefunden. Die Website ist in gutem Zustand.</div>
                     </div>
                   )}
                 </div>

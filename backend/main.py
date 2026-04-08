@@ -363,61 +363,80 @@ def run_analysis(analysis_id: int, kickoff: dict, checks: dict, config: dict):
         period = kickoff.get("analysis_period", "last_28_days")
         start_date, end_date = _resolve_date_range(period)
 
+        import time as _time
+
         # ── 1. Website Crawling ──────────────────────────────────────────────
         if checks.get("crawling", True):
-            update_status(analysis_id, "crawling", 5, "Website wird gecrawlt...")
+            update_status(analysis_id, "crawling", 5,
+                          "Website wird vollständig gecrawlt (alle Seiten, inkl. Unterseiten)...")
             try:
                 crawler = WebsiteCrawler(
                     website_url,
-                    max_depth=int(config.get("crawler_max_depth", 3)),
-                    max_urls=int(config.get("crawler_max_urls", 200)),
+                    max_depth=int(config.get("crawler_max_depth", 5)),
+                    max_urls=int(config.get("crawler_max_urls", 500)),
+                    politeness_delay=float(config.get("crawler_delay", 0.3)),
                 )
                 crawler_results = crawler.crawl()
                 results["crawler"] = crawler_results
-                update_status(analysis_id, "crawling", 25, f"Crawling abgeschlossen: {len(crawler_results.get('pages', []))} Seiten gefunden")
+                n = len(crawler_results.get("pages", []))
+                issues_count = sum(1 for k, v in crawler_results.get("issues", {}).items()
+                                   if isinstance(v, list) and len(v) > 0)
+                update_status(analysis_id, "crawling", 28,
+                              f"Crawling abgeschlossen: {n} Seiten analysiert, {issues_count} Problem-Kategorien gefunden")
             except Exception as e:
                 results["crawler"] = {"error": str(e), "pages": []}
-                update_status(analysis_id, "crawling", 25, f"Crawling Fehler: {e}")
+                update_status(analysis_id, "crawling", 28, f"Crawling Fehler: {e}")
 
         # ── 2. PageSpeed ─────────────────────────────────────────────────────
         if checks.get("pagespeed", True):
-            update_status(analysis_id, "pagespeed", 26, "PageSpeed wird analysiert (Mobile + Desktop)...")
+            update_status(analysis_id, "pagespeed", 29,
+                          "Google PageSpeed wird analysiert (Startseite, Mobile + Desktop)...")
             try:
                 ps = PageSpeedAPI(api_key=config.get("pagespeed_api_key", ""))
-                ps_results = {
-                    "mobile": ps.get_pagespeed_data(website_url, "mobile"),
-                    "desktop": ps.get_pagespeed_data(website_url, "desktop"),
-                }
+                mob = ps.get_pagespeed_data(website_url, "mobile")
+                _time.sleep(2)  # Avoid hitting rate limit between mobile/desktop
+                desk = ps.get_pagespeed_data(website_url, "desktop")
+                ps_results = {"mobile": mob, "desktop": desk}
                 results["pagespeed"] = ps_results
-                score = ps_results["mobile"].get("performance_score", 0)
-                update_status(analysis_id, "pagespeed", 38, f"PageSpeed abgeschlossen: Mobile Score {score:.0f}/100")
+                score = mob.get("performance_score")
+                if score is not None:
+                    update_status(analysis_id, "pagespeed", 42,
+                                  f"PageSpeed abgeschlossen: Mobile Score {score}/100 – {len(mob.get('failed_audits', []))} Audits nicht bestanden")
+                else:
+                    update_status(analysis_id, "pagespeed", 42,
+                                  f"PageSpeed: {mob.get('error', 'Unbekannter Fehler')}")
             except Exception as e:
                 results["pagespeed"] = {"error": str(e)}
-                update_status(analysis_id, "pagespeed", 38, f"PageSpeed Fehler: {e}")
+                update_status(analysis_id, "pagespeed", 42, f"PageSpeed Fehler: {e}")
 
         # ── 3. Speed Test ────────────────────────────────────────────────────
         if checks.get("speedtest", True):
-            update_status(analysis_id, "speedtest", 39, "Speed-Test wird durchgeführt (3 Messungen pro Seite)...")
+            update_status(analysis_id, "speedtest", 43,
+                          "Ladezeit-Test: Startseite + 9 Unterseiten werden je 5x gemessen...")
             try:
-                # Test homepage + up to 4 crawled subpages for variety
+                # Homepage + up to 9 diverse crawled subpages
                 urls_to_test = [website_url]
                 if results.get("crawler", {}).get("pages"):
-                    crawled = [
+                    crawled_ok = [
                         p["url"] for p in results["crawler"]["pages"]
                         if p.get("status", 0) == 200 and p["url"] != website_url
                     ]
-                    urls_to_test += crawled[:4]
+                    # Sample pages from different depths for diversity
+                    urls_to_test += crawled_ok[:9]
 
-                tester = SpeedTester(urls=urls_to_test, runs=3)
+                tester = SpeedTester(urls=urls_to_test, runs=5)
                 speed_results = tester.run()
                 results["speedtest"] = speed_results
                 avg = speed_results["summary"].get("avg_total_ms")
                 ttfb = speed_results["summary"].get("avg_ttfb_ms")
-                msg = f"Speed-Test abgeschlossen: Ø {avg:.0f} ms total, TTFB {ttfb:.0f} ms" if avg and ttfb else "Speed-Test abgeschlossen"
-                update_status(analysis_id, "speedtest", 50, msg)
+                rating = speed_results["summary"].get("avg_ttfb_rating", "")
+                msg = (f"Ladezeit-Test abgeschlossen: Ø TTFB {ttfb:.0f} ms, Ø Gesamt {avg:.0f} ms "
+                       f"({'gut' if rating == 'good' else 'verbesserbar' if rating == 'needs_work' else 'kritisch'})"
+                       if avg and ttfb else "Ladezeit-Test abgeschlossen")
+                update_status(analysis_id, "speedtest", 55, msg)
             except Exception as e:
                 results["speedtest"] = {"error": str(e)}
-                update_status(analysis_id, "speedtest", 50, f"Speed-Test Fehler: {e}")
+                update_status(analysis_id, "speedtest", 55, f"Speed-Test Fehler: {e}")
 
         # ── 4. GA4 ───────────────────────────────────────────────────────────
         property_id = kickoff.get("ga4_property_id", "")
