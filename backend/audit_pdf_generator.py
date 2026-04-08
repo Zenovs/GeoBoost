@@ -685,6 +685,28 @@ tr:last-child td { border-bottom: none; }
 """
 
 
+class _D(dict):
+    """Dict subclass that returns None for missing attribute/key access.
+    This makes Jinja2 'is not none' checks work correctly for optional fields:
+    missing key → None (falsy), existing key → value.
+    """
+    def __getattr__(self, key):
+        try:
+            v = self[key]
+            return _D(v) if isinstance(v, dict) else v
+        except KeyError:
+            return None
+    def __missing__(self, key):
+        return None
+
+
+def _d(data) -> "_D":
+    """Recursively wrap dict data in _D for safe Jinja2 attribute access."""
+    if not isinstance(data, dict):
+        return data
+    return _D({k: (_d(v) if isinstance(v, dict) else v) for k, v in data.items()})
+
+
 class AuditPDFGenerator:
     def __init__(self, config: Dict = None):
         self.config = config or {}
@@ -707,15 +729,21 @@ class AuditPDFGenerator:
         env.filters["fmt_num"] = self._fmt_num
         env.filters["fmt_pct"] = lambda v: f"{float(v):.1f}%" if v else "–"
 
-        kickoff    = audit.get("step0_kickoff") or {}
-        # step1_website = Website & Kunden (not used directly in PDF)
-        # step2_crawl   = Technischer Scan (notes only, not in PDF)
-        crawl      = audit.get("step3_semrush") or {}    # Background-Crawl (Screaming Frog)
-        semrush    = audit.get("step4_lighthouse") or {}  # SemRush Check
-        lighthouse = audit.get("step5_notes") or {}       # Lighthouse Bericht
-        report     = audit.get("step6_report") or {}      # Report / Fazit
+        raw_kickoff    = audit.get("step0_kickoff") or {}
+        raw_crawl      = audit.get("step3_semrush") or {}    # Background-Crawl (Screaming Frog)
+        raw_semrush    = audit.get("step4_lighthouse") or {}  # SemRush Check
+        raw_lighthouse = audit.get("step5_notes") or {}       # Lighthouse Bericht
+        raw_report     = audit.get("step6_report") or {}      # Report / Fazit
 
-        recs_raw = report.get("recommendations", "")
+        # Wrap all dict data so that missing keys return None (not Undefined)
+        # This makes {% if x.y is not none %} checks work correctly in Jinja2.
+        kickoff    = _d(raw_kickoff)
+        crawl      = _d(raw_crawl)    if raw_crawl      else None
+        semrush    = _d(raw_semrush)  if raw_semrush    else None
+        lighthouse = _d(raw_lighthouse) if raw_lighthouse else None
+        report     = _d(raw_report)
+
+        recs_raw = raw_report.get("recommendations", "")
         recommendations = []
         if isinstance(recs_raw, list):
             recommendations = recs_raw
@@ -736,9 +764,9 @@ class AuditPDFGenerator:
             analysis_date=kickoff.get("analysis_date", datetime.now().strftime("%d.%m.%Y")),
             analyst_name=kickoff.get("analyst_name", self.company),
             responsible_person=kickoff.get("responsible_person", ""),
-            crawl=crawl if crawl else None,
-            semrush=semrush if semrush else None,
-            lighthouse=lighthouse if lighthouse else None,
+            crawl=crawl,
+            semrush=semrush,
+            lighthouse=lighthouse,
             findings=report.get("findings", ""),
             recommendations=recommendations,
             general_notes=report.get("general_notes", ""),
