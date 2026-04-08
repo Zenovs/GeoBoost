@@ -17,11 +17,24 @@ class Database:
         self.db_path = db_path or str(DB_PATH)
         Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
         self._init()
+        self._migrate()
 
     def _conn(self):
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
         return conn
+
+    def _migrate(self):
+        """Add columns introduced after initial release."""
+        migrations = [
+            "ALTER TABLE audits ADD COLUMN step6_report TEXT",
+        ]
+        with self._conn() as conn:
+            for sql in migrations:
+                try:
+                    conn.execute(sql)
+                except Exception:
+                    pass  # column already exists
 
     def _init(self):
         with self._conn() as conn:
@@ -40,6 +53,7 @@ class Database:
                     step3_semrush    TEXT,
                     step4_lighthouse TEXT,
                     step5_notes      TEXT,
+                    step6_report     TEXT,
                     pdf_path         TEXT,
                     created_at       TEXT DEFAULT (datetime('now')),
                     updated_at       TEXT DEFAULT (datetime('now'))
@@ -223,7 +237,7 @@ class Database:
                 return None
             d = dict(row)
             for step in ["step0_kickoff", "step1_website", "step2_crawl",
-                         "step3_semrush", "step4_lighthouse", "step5_notes"]:
+                         "step3_semrush", "step4_lighthouse", "step5_notes", "step6_report"]:
                 if d.get(step):
                     try:
                         d[step] = json.loads(d[step])
@@ -233,8 +247,13 @@ class Database:
 
     def update_audit_step(self, audit_id: int, step: int, data: dict):
         col_map = {
-            0: "step0_kickoff", 1: "step1_website", 2: "step2_crawl",
-            3: "step3_semrush", 4: "step4_lighthouse", 5: "step5_notes",
+            0: "step0_kickoff",   # Fragekatalog / Kickoff
+            1: "step1_website",   # Website & Kunden
+            2: "step2_crawl",     # Technischer Scan
+            3: "step3_semrush",   # Background-Crawl (Screaming Frog)
+            4: "step4_lighthouse",# SemRush Check
+            5: "step5_notes",     # Lighthouse / PageSpeed
+            6: "step6_report",    # Report / Fazit
         }
         col = col_map.get(step)
         if col is None:

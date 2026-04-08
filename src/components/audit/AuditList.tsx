@@ -18,7 +18,7 @@ const STATUS_STYLE: Record<string, string> = {
   complete: "background:#dcfce7;color:#16a34a",
 };
 
-const STEP_LABELS = ["Kickoff", "Traffic", "Crawl", "SemRush", "PageSpeed", "Bericht"];
+const STEP_LABELS = ["Kickoff", "Website & Kunden", "Tech. Scan", "Background-Crawl", "SemRush Check", "Lighthouse", "Report / PDF"];
 
 export default function AuditList({ onOpen }: Props) {
   const [audits, setAudits] = useState<AuditSummary[]>([]);
@@ -193,7 +193,7 @@ export default function AuditList({ onOpen }: Props) {
                 <div style={{ fontSize: 12, color: "var(--gray-400,#9ca3af)" }}>
                   {audit.client_name && <span style={{ marginRight: 12 }}>👤 {audit.client_name}</span>}
                   {audit.website_url && <span style={{ marginRight: 12 }}>🌐 {audit.website_url}</span>}
-                  <span>Schritt {audit.current_step + 1}/6: {STEP_LABELS[audit.current_step] || "–"}</span>
+                  <span>Schritt {audit.current_step + 1}/7: {STEP_LABELS[audit.current_step] || "–"}</span>
                 </div>
               </div>
               <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>

@@ -617,7 +617,7 @@ class CreateAuditRequest(BaseModel):
 
 
 class UpdateAuditStepRequest(BaseModel):
-    step: int  # 0-5
+    step: int  # 0-6
     data: dict
 
 
@@ -671,8 +671,8 @@ async def upload_screaming_frog(audit_id: int, file: UploadFile = File(...)):
     except Exception as e:
         raise HTTPException(400, f"CSV konnte nicht gelesen werden: {e}")
 
-    # Merge into step2
-    existing = audit.get("step2_crawl") or {}
+    # Merge into step3 (Background-Crawl)
+    existing = audit.get("step3_semrush") or {}
     if isinstance(existing, str):
         try:
             existing = json.loads(existing)
@@ -680,7 +680,7 @@ async def upload_screaming_frog(audit_id: int, file: UploadFile = File(...)):
             existing = {}
     existing["summary"] = parsed["summary"]
     existing["issues"] = parsed["issues"]
-    db.update_audit_step(audit_id, 2, existing)
+    db.update_audit_step(audit_id, 3, existing)
     return {
         "ok": True,
         "summary": parsed["summary"],
@@ -699,7 +699,8 @@ async def upload_semrush(audit_id: int, file: UploadFile = File(...)):
     except Exception as e:
         raise HTTPException(400, f"CSV konnte nicht gelesen werden: {e}")
 
-    existing = audit.get("step3_semrush") or {}
+    # Merge into step4 (SemRush Check)
+    existing = audit.get("step4_lighthouse") or {}
     if isinstance(existing, str):
         try:
             existing = json.loads(existing)
@@ -707,7 +708,7 @@ async def upload_semrush(audit_id: int, file: UploadFile = File(...)):
             existing = {}
     existing["semrush_summary"] = parsed["summary"]
     existing["semrush_issues"] = parsed["issues"]
-    db.update_audit_step(audit_id, 3, existing)
+    db.update_audit_step(audit_id, 4, existing)
     return {
         "ok": True,
         "summary": parsed["summary"],
@@ -717,7 +718,7 @@ async def upload_semrush(audit_id: int, file: UploadFile = File(...)):
 
 @app.post("/api/audits/{audit_id}/lighthouse/fetch")
 def fetch_lighthouse(audit_id: int, body: dict):
-    """Fetch PageSpeed data and save to audit step 4."""
+    """Fetch PageSpeed data and save to audit step 5 (Lighthouse)."""
     audit = db.get_audit(audit_id)
     if not audit:
         raise HTTPException(404, "Audit nicht gefunden")
@@ -753,14 +754,14 @@ def fetch_lighthouse(audit_id: int, body: dict):
             for a in data.get("failed_audits", [])[:3]
         ],
     }
-    existing = audit.get("step4_lighthouse") or {}
+    existing = audit.get("step5_notes") or {}
     if isinstance(existing, str):
         try:
             existing = json.loads(existing)
         except Exception:
             existing = {}
     existing.update(step_data)
-    db.update_audit_step(audit_id, 4, existing)
+    db.update_audit_step(audit_id, 5, existing)
     return step_data
 
 

@@ -6,11 +6,12 @@ interface Props {
 
 const STEPS = [
   { label: "Kickoff" },
-  { label: "Traffic" },
+  { label: "Website" },
+  { label: "Tech Scan" },
   { label: "Crawl" },
   { label: "SemRush" },
-  { label: "PageSpeed" },
-  { label: "Bericht" },
+  { label: "Lighthouse" },
+  { label: "Report" },
 ];
 
 export default function StepIndicator({ current, maxReached, onNavigate }: Props) {
@@ -22,51 +23,28 @@ export default function StepIndicator({ current, maxReached, onNavigate }: Props
         const reachable = i <= maxReached;
         return (
           <div key={i} style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
-            <div
-              onClick={() => reachable && onNavigate(i)}
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: 6,
-                cursor: reachable ? "pointer" : "default",
-                opacity: reachable ? 1 : 0.4,
-              }}
-            >
+            <div onClick={() => reachable && onNavigate(i)}
+              style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5, cursor: reachable ? "pointer" : "default", opacity: reachable ? 1 : 0.4 }}>
               <div style={{
-                width: 34,
-                height: 34,
-                borderRadius: "50%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontWeight: 700,
-                fontSize: 13,
-                background: done ? "var(--green, #16a34a)" : active ? "var(--blue-600, #2563eb)" : "var(--gray-200, #e5e7eb)",
-                color: done || active ? "white" : "var(--gray-500, #6b7280)",
+                width: 32, height: 32, borderRadius: "50%",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontWeight: 700, fontSize: 12,
+                background: done ? "#16a34a" : active ? "#2563eb" : "#e5e7eb",
+                color: done || active ? "white" : "#6b7280",
                 boxShadow: active ? "0 0 0 3px rgba(37,99,235,0.25)" : "none",
                 transition: "all 0.2s",
               }}>
                 {done ? "✓" : i + 1}
               </div>
               <span style={{
-                fontSize: 11,
-                fontWeight: active ? 700 : 500,
-                color: active ? "var(--blue-600, #2563eb)" : done ? "var(--green, #16a34a)" : "var(--gray-500, #6b7280)",
-                whiteSpace: "nowrap",
+                fontSize: 10, fontWeight: active ? 700 : 500, whiteSpace: "nowrap",
+                color: active ? "#2563eb" : done ? "#16a34a" : "#6b7280",
               }}>
                 {step.label}
               </span>
             </div>
             {i < STEPS.length - 1 && (
-              <div style={{
-                width: 40,
-                height: 2,
-                background: i < current ? "var(--green, #16a34a)" : "var(--gray-200, #e5e7eb)",
-                margin: "0 4px",
-                marginBottom: 20,
-                transition: "background 0.3s",
-              }} />
+              <div style={{ width: 28, height: 2, background: i < current ? "#16a34a" : "#e5e7eb", margin: "0 2px", marginBottom: 18, transition: "background 0.3s", flexShrink: 0 }} />
             )}
           </div>
         );

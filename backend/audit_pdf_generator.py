@@ -433,54 +433,11 @@ tr:last-child td { border-bottom: none; }
   </div>
 </div>
 
-<!-- ══ 1. Traffic-Übersicht ═══════════════════════════════════════════════ -->
-{% if traffic %}
-<div class="page">
-  <div class="section">
-    <h2 class="section-title">{% if theme_name == "nerd" %}// {% endif %}1. Traffic-Übersicht (GA4)</h2>
-    <div class="kpi-grid">
-      {% if traffic.sessions_total is not none %}<div class="kpi-item"><div class="kpi-label">Sessions gesamt</div><div class="kpi-value">{{ traffic.sessions_total | fmt_num }}</div></div>{% endif %}
-      {% if traffic.new_users_total is not none %}<div class="kpi-item"><div class="kpi-label">Neue Nutzer</div><div class="kpi-value">{{ traffic.new_users_total | fmt_num }}</div></div>{% endif %}
-      {% if traffic.bounce_rate is not none %}<div class="kpi-item"><div class="kpi-label">Absprungrate</div><div class="kpi-value">{{ traffic.bounce_rate }}%</div></div>{% endif %}
-      {% if traffic.avg_session_duration %}<div class="kpi-item"><div class="kpi-label">Ø Sitzungsdauer</div><div class="kpi-value">{{ traffic.avg_session_duration }}</div></div>{% endif %}
-      {% if traffic.conversions_total is not none %}<div class="kpi-item"><div class="kpi-label">Conversions</div><div class="kpi-value">{{ traffic.conversions_total | fmt_num }}</div></div>{% endif %}
-      {% if traffic.conversion_rate is not none %}<div class="kpi-item"><div class="kpi-label">Conv.-Rate</div><div class="kpi-value">{{ traffic.conversion_rate }}%</div></div>{% endif %}
-    </div>
-
-    {% if traffic.channel_breakdown %}
-    <h3 class="subsection">Kanal-Übersicht</h3>
-    <table>
-      <thead><tr><th>Kanal</th><th>Sessions</th><th>Anteil</th></tr></thead>
-      <tbody>
-        {% for ch in traffic.channel_breakdown %}
-        <tr><td>{{ ch.channel }}</td><td>{{ ch.sessions | fmt_num }}</td><td>{{ ch.pct }}%</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
-    {% endif %}
-
-    {% if traffic.device_breakdown %}
-    <h3 class="subsection" style="margin-top:16px">Geräte</h3>
-    <div class="kpi-grid" style="grid-template-columns: repeat(3,1fr)">
-      <div class="kpi-item"><div class="kpi-label">Desktop</div><div class="kpi-value">{{ traffic.device_breakdown.desktop or '–' }}%</div></div>
-      <div class="kpi-item"><div class="kpi-label">Mobile</div><div class="kpi-value">{{ traffic.device_breakdown.mobile or '–' }}%</div></div>
-      <div class="kpi-item"><div class="kpi-label">Tablet</div><div class="kpi-value">{{ traffic.device_breakdown.tablet or '–' }}%</div></div>
-    </div>
-    {% endif %}
-
-    {% if traffic.notes %}
-    <h3 class="subsection" style="margin-top:16px">Notizen</h3>
-    <div class="notes-box">{{ traffic.notes }}</div>
-    {% endif %}
-  </div>
-</div>
-{% endif %}
-
-<!-- ══ 2. Technische SEO (Screaming Frog) ═════════════════════════════════ -->
+<!-- ══ 1. Background-Crawl (Screaming Frog) ═══════════════════════════════ -->
 {% if crawl %}
 <div class="page page-break">
   <div class="section">
-    <h2 class="section-title">{% if theme_name == "nerd" %}// {% endif %}2. Technische SEO (Screaming Frog)</h2>
+    <h2 class="section-title">{% if theme_name == "nerd" %}// {% endif %}1. Background-Crawl (Screaming Frog)</h2>
     {% if crawl.summary %}
     <div class="kpi-grid" style="grid-template-columns: repeat(4,1fr)">
       <div class="kpi-item"><div class="kpi-label">URLs gecrawlt</div><div class="kpi-value" style="color:var(--kpi-value)">{{ crawl.summary.total_urls | fmt_num }}</div></div>
@@ -520,23 +477,31 @@ tr:last-child td { border-bottom: none; }
 </div>
 {% endif %}
 
-<!-- ══ 3. SemRush Site Audit ══════════════════════════════════════════════ -->
+<!-- ══ 2. SemRush Site Audit ══════════════════════════════════════════════ -->
 {% if semrush %}
 <div class="page page-break">
   <div class="section">
-    <h2 class="section-title">{% if theme_name == "nerd" %}// {% endif %}3. SemRush Site Audit</h2>
-    {% if semrush.summary %}
-    <div class="kpi-grid" style="grid-template-columns: repeat(3,1fr)">
-      <div class="kpi-item" style="border-left: 3px solid var(--score-bad)"><div class="kpi-label">Fehler</div><div class="kpi-value" style="color:var(--score-bad)">{{ semrush.summary.errors | fmt_num }}</div></div>
-      <div class="kpi-item" style="border-left: 3px solid var(--score-ok)"><div class="kpi-label">Warnungen</div><div class="kpi-value" style="color:var(--score-ok)">{{ semrush.summary.warnings | fmt_num }}</div></div>
-      <div class="kpi-item" style="border-left: 3px solid #8b5cf6"><div class="kpi-label">Hinweise</div><div class="kpi-value" style="color:#8b5cf6">{{ semrush.summary.notices | fmt_num }}</div></div>
+    <h2 class="section-title">{% if theme_name == "nerd" %}// {% endif %}2. SemRush Site Audit</h2>
+
+    {% if semrush.site_health_score is not none %}
+    <div class="kpi-grid" style="grid-template-columns: repeat(4,1fr); margin-bottom: 16px">
+      <div class="kpi-item" style="border-left: 3px solid {{ 'var(--score-good)' if semrush.site_health_score >= 80 else 'var(--score-ok)' if semrush.site_health_score >= 50 else 'var(--score-bad)' }}">
+        <div class="kpi-label">Site Health Score</div>
+        <div class="kpi-value" style="color: {{ 'var(--score-good)' if semrush.site_health_score >= 80 else 'var(--score-ok)' if semrush.site_health_score >= 50 else 'var(--score-bad)' }}">{{ semrush.site_health_score }}/100</div>
+        <div class="kpi-sub">{{ 'Gut' if semrush.site_health_score >= 80 else 'Mittel' if semrush.site_health_score >= 50 else 'Kritisch' }}</div>
+      </div>
+      {% if semrush.semrush_summary %}
+      <div class="kpi-item" style="border-left: 3px solid var(--score-bad)"><div class="kpi-label">Fehler</div><div class="kpi-value" style="color:var(--score-bad)">{{ semrush.semrush_summary.errors | fmt_num }}</div></div>
+      <div class="kpi-item" style="border-left: 3px solid var(--score-ok)"><div class="kpi-label">Warnungen</div><div class="kpi-value" style="color:var(--score-ok)">{{ semrush.semrush_summary.warnings | fmt_num }}</div></div>
+      <div class="kpi-item" style="border-left: 3px solid #8b5cf6"><div class="kpi-label">Hinweise</div><div class="kpi-value" style="color:#8b5cf6">{{ semrush.semrush_summary.notices | fmt_num }}</div></div>
+      {% endif %}
     </div>
     {% endif %}
 
-    {% if semrush.issues %}
+    {% if semrush.semrush_issues %}
     <h3 class="subsection">Gefundene Probleme</h3>
     <div class="issue-list">
-      {% for issue in semrush.issues[:20] %}
+      {% for issue in semrush.semrush_issues[:20] %}
       <div class="issue-item {{ issue.severity }}">
         <div class="issue-title">{{ issue.issue }}</div>
         <div class="issue-meta">
@@ -548,19 +513,34 @@ tr:last-child td { border-bottom: none; }
     </div>
     {% endif %}
 
+    {% if semrush.on_page_seo_notes %}
+    <h3 class="subsection" style="margin-top:16px">🔍 On-Page SEO</h3>
+    <div class="notes-box">{{ semrush.on_page_seo_notes }}</div>
+    {% endif %}
+
+    {% if semrush.technical_status_notes %}
+    <h3 class="subsection" style="margin-top:12px">⚙️ Technischer Zustand</h3>
+    <div class="notes-box">{{ semrush.technical_status_notes }}</div>
+    {% endif %}
+
+    {% if semrush.geo_ki_notes %}
+    <h3 class="subsection" style="margin-top:12px">🤖 KI-Suche / GEO</h3>
+    <div class="notes-box">{{ semrush.geo_ki_notes }}</div>
+    {% endif %}
+
     {% if semrush.notes %}
-    <h3 class="subsection" style="margin-top:16px">Notizen</h3>
+    <h3 class="subsection" style="margin-top:12px">Allgemeine Notizen</h3>
     <div class="notes-box">{{ semrush.notes }}</div>
     {% endif %}
   </div>
 </div>
 {% endif %}
 
-<!-- ══ 4. PageSpeed / Core Web Vitals ════════════════════════════════════ -->
+<!-- ══ 3. Lighthouse Bericht ═══════════════════════════════════════════════ -->
 {% if lighthouse %}
 <div class="page page-break">
   <div class="section">
-    <h2 class="section-title">{% if theme_name == "nerd" %}// {% endif %}4. PageSpeed &amp; Core Web Vitals</h2>
+    <h2 class="section-title">{% if theme_name == "nerd" %}// {% endif %}3. Lighthouse Bericht</h2>
     <div class="two-col">
       <div>
         <h3 class="subsection">📱 Mobile</h3>
@@ -606,18 +586,58 @@ tr:last-child td { border-bottom: none; }
       </div>
     </div>
 
-    {% if lighthouse.cwv_lcp or lighthouse.cwv_fid or lighthouse.cwv_cls %}
+    {% if lighthouse.cwv_lcp or lighthouse.cwv_cls or lighthouse.cwv_tbt %}
     <h3 class="subsection" style="margin-top:16px">Core Web Vitals</h3>
     <div class="kpi-grid" style="grid-template-columns: repeat(3,1fr)">
       {% if lighthouse.cwv_lcp %}<div class="kpi-item"><div class="kpi-label">LCP (Largest Contentful Paint)</div><div class="kpi-value">{{ lighthouse.cwv_lcp }}</div><div class="kpi-sub">Ziel: &lt; 2,5s</div></div>{% endif %}
-      {% if lighthouse.cwv_fid %}<div class="kpi-item"><div class="kpi-label">INP / FID</div><div class="kpi-value">{{ lighthouse.cwv_fid }}</div><div class="kpi-sub">Ziel: &lt; 200ms</div></div>{% endif %}
-      {% if lighthouse.cwv_cls %}<div class="kpi-item"><div class="kpi-label">CLS (Layout Shift)</div><div class="kpi-value">{{ lighthouse.cwv_cls }}</div><div class="kpi-sub">Ziel: &lt; 0.1</div></div>{% endif %}
+      {% if lighthouse.cwv_cls %}<div class="kpi-item"><div class="kpi-label">CLS (Cumulative Layout Shift)</div><div class="kpi-value">{{ lighthouse.cwv_cls }}</div><div class="kpi-sub">Ziel: &lt; 0.1</div></div>{% endif %}
+      {% if lighthouse.cwv_tbt %}<div class="kpi-item"><div class="kpi-label">TBT (Total Blocking Time)</div><div class="kpi-value">{{ lighthouse.cwv_tbt }}</div><div class="kpi-sub">Ziel: &lt; 200ms</div></div>{% endif %}
     </div>
     {% endif %}
 
-    {% if lighthouse.notes %}
-    <h3 class="subsection" style="margin-top:16px">Notizen</h3>
-    <div class="notes-box">{{ lighthouse.notes }}</div>
+    {% set prio_a = lighthouse.prio_a %}
+    {% set prio_b = lighthouse.prio_b %}
+    {% set prio_c = lighthouse.prio_c %}
+    {% if prio_a or prio_b or prio_c %}
+    <h3 class="subsection" style="margin-top:20px">Top 3 Prioritäten</h3>
+    <div style="display:flex; flex-direction:column; gap:12px">
+      {% for prio, label, color in [(prio_a, 'Priorität A', '#dc2626'), (prio_b, 'Priorität B', '#d97706'), (prio_c, 'Priorität C', '#2563eb')] %}
+      {% if prio and (prio.title or prio.warum) %}
+      <div style="border:1px solid var(--bg-card-border); border-left:4px solid {{ color }}; border-radius:8px; overflow:hidden;">
+        <div style="background:{{ color }}; color:white; padding:8px 14px; font-size:12px; font-weight:700;">{{ label }}{% if prio.title %}: {{ prio.title }}{% endif %}</div>
+        <div style="padding:12px 14px; display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; background:var(--bg-card)">
+          {% if prio.warum %}<div><div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom:4px">Warum</div><div style="font-size:12px; color:var(--text)">{{ prio.warum }}</div></div>{% endif %}
+          {% if prio.erledigung %}<div><div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom:4px">Erledigung</div><div style="font-size:12px; color:var(--text)">{{ prio.erledigung }}</div></div>{% endif %}
+          {% if prio.auswirkung %}<div><div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom:4px">Auswirkung</div><div style="font-size:12px; color:var(--text)">{{ prio.auswirkung }}</div></div>{% endif %}
+        </div>
+      </div>
+      {% endif %}
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if lighthouse.checklist %}
+    <h3 class="subsection" style="margin-top:20px">Technische Checkliste</h3>
+    <div style="display:flex; flex-direction:column; gap:6px">
+      {% for key, label in [('responsive', 'Mobile-freundlich / Responsives Design'), ('https', 'HTTPS aktiviert'), ('sitemap', 'Sitemap vorhanden'), ('canonical', 'Canonical-Tags gesetzt'), ('meta_tags', 'Meta-Tags vollständig')] %}
+      {% set val = lighthouse.checklist[key] if lighthouse.checklist is mapping else none %}
+      <div style="display:flex; align-items:center; gap:10px; padding:8px 12px; background:{{ 'var(--notes-bg)' }}; border-radius:6px; border:1px solid var(--border)">
+        <span style="font-size:16px">{{ '✅' if val else '⬜' }}</span>
+        <span style="font-size:12px; color:var(--text)">{{ label }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if lighthouse.fazit %}
+    <h3 class="subsection" style="margin-top:20px">Fazit</h3>
+    <div class="notes-box">{{ lighthouse.fazit }}</div>
+    {% endif %}
+
+    {% if lighthouse.next_step %}
+    <div style="margin-top:12px; padding:12px 16px; background:var(--bg-card); border:1px solid var(--bg-card-border); border-radius:8px; font-size:12px">
+      <strong>Nächster Schritt:</strong> {{ lighthouse.next_step }}{% if lighthouse.next_step_date %} <span style="color:var(--text-muted)">– {{ lighthouse.next_step_date }}</span>{% endif %}
+    </div>
     {% endif %}
   </div>
 </div>
@@ -626,7 +646,7 @@ tr:last-child td { border-bottom: none; }
 <!-- ══ 5. Fazit & Empfehlungen ════════════════════════════════════════════ -->
 <div class="page page-break">
   <div class="section">
-    <h2 class="section-title">{% if theme_name == "nerd" %}// {% endif %}5. Fazit &amp; Empfehlungen</h2>
+    <h2 class="section-title">{% if theme_name == "nerd" %}// {% endif %}4. Fazit &amp; Empfehlungen</h2>
 
     {% if findings %}
     <h3 class="subsection">Wichtigste Erkenntnisse</h3>
@@ -688,13 +708,14 @@ class AuditPDFGenerator:
         env.filters["fmt_pct"] = lambda v: f"{float(v):.1f}%" if v else "–"
 
         kickoff    = audit.get("step0_kickoff") or {}
-        traffic    = audit.get("step1_website") or {}
-        crawl      = audit.get("step2_crawl") or {}
-        semrush    = audit.get("step3_semrush") or {}
-        lighthouse = audit.get("step4_lighthouse") or {}
-        notes      = audit.get("step5_notes") or {}
+        # step1_website = Website & Kunden (not used directly in PDF)
+        # step2_crawl   = Technischer Scan (notes only, not in PDF)
+        crawl      = audit.get("step3_semrush") or {}    # Background-Crawl (Screaming Frog)
+        semrush    = audit.get("step4_lighthouse") or {}  # SemRush Check
+        lighthouse = audit.get("step5_notes") or {}       # Lighthouse Bericht
+        report     = audit.get("step6_report") or {}      # Report / Fazit
 
-        recs_raw = notes.get("recommendations", "")
+        recs_raw = report.get("recommendations", "")
         recommendations = []
         if isinstance(recs_raw, list):
             recommendations = recs_raw
@@ -715,13 +736,12 @@ class AuditPDFGenerator:
             analysis_date=kickoff.get("analysis_date", datetime.now().strftime("%d.%m.%Y")),
             analyst_name=kickoff.get("analyst_name", self.company),
             responsible_person=kickoff.get("responsible_person", ""),
-            traffic=traffic if traffic else None,
             crawl=crawl if crawl else None,
             semrush=semrush if semrush else None,
             lighthouse=lighthouse if lighthouse else None,
-            findings=notes.get("findings", ""),
+            findings=report.get("findings", ""),
             recommendations=recommendations,
-            general_notes=notes.get("general_notes", ""),
+            general_notes=report.get("general_notes", ""),
         )
 
         template = env.from_string(TEMPLATE)
