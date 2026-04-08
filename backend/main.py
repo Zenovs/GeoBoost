@@ -764,10 +764,16 @@ def fetch_lighthouse(audit_id: int, body: dict):
     return step_data
 
 
+class GenerateReportRequest(BaseModel):
+    theme: str = "light"
+
 @app.post("/api/audits/{audit_id}/report/generate")
-def generate_audit_report(audit_id: int):
+def generate_audit_report(audit_id: int, req: GenerateReportRequest = None):
     """Generate PDF report from audit data."""
-    from audit_pdf_generator import AuditPDFGenerator
+    from audit_pdf_generator import AuditPDFGenerator, THEMES
+    theme = (req.theme if req else None) or "light"
+    if theme not in THEMES:
+        theme = "light"
     audit = db.get_audit(audit_id)
     if not audit:
         raise HTTPException(404, "Audit nicht gefunden")
@@ -775,11 +781,10 @@ def generate_audit_report(audit_id: int):
     storage = Path(config.get("storage_path", "~/Documents/GeoBoost_Projects")).expanduser()
     pdf_dir = storage / "audits"
     pdf_dir.mkdir(parents=True, exist_ok=True)
-    pdf_path = pdf_dir / f"audit_{audit_id}.pdf"
-    template_dir = Path(__file__).parent.parent / "templates"
+    pdf_path = pdf_dir / f"audit_{audit_id}_{theme}.pdf"
     try:
-        gen = AuditPDFGenerator(template_dir=str(template_dir), config=config)
-        gen.generate(audit, str(pdf_path))
+        gen = AuditPDFGenerator(config=config)
+        gen.generate(audit, str(pdf_path), theme=theme)
         db.save_audit_pdf(audit_id, str(pdf_path))
         return {"ok": True, "pdf_path": str(pdf_path)}
     except Exception as e:

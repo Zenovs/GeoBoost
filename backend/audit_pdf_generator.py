@@ -1,115 +1,434 @@
 """
 GeoBoost – Audit PDF Generator
 Generates a structured PDF report from the 6-step audit workflow data.
+Supports 5 visual themes: light, dark, nerd, color, schnyder.
 """
 
-import os
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 
+
+# ── Theme definitions ─────────────────────────────────────────────────────────
+
+THEMES: Dict[str, Dict[str, str]] = {
+    "light": {
+        "font":               "'Helvetica Neue', Arial, sans-serif",
+        "bg":                 "#ffffff",
+        "bg_card":            "#f8f9ff",
+        "bg_card_border":     "#e8eaf0",
+        "bg_tbl_head":        "#2563eb",
+        "bg_tbl_row_alt":     "#f0f4ff",
+        "text":               "#1e293b",
+        "text_muted":         "#64748b",
+        "text_light":         "#94a3b8",
+        "primary":            "#2563eb",
+        "accent":             "#7c3aed",
+        "border":             "#e8eaf0",
+        "cover_bg":           "linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)",
+        "cover_text":         "#ffffff",
+        "cover_sub":          "rgba(255,255,255,0.82)",
+        "cover_meta_bg":      "rgba(255,255,255,0.15)",
+        "cover_meta_border":  "transparent",
+        "cover_label":        "rgba(255,255,255,0.65)",
+        "cover_badge_bg":     "rgba(255,255,255,0.22)",
+        "cover_badge_text":   "#ffffff",
+        "section_title_border": "#2563eb",
+        "rec_num_bg":         "#2563eb",
+        "rec_num_text":       "#ffffff",
+        "rec_item_bg":        "#f0f4ff",
+        "score_good":         "#16a34a",
+        "score_ok":           "#d97706",
+        "score_bad":          "#dc2626",
+        "kpi_value":          "#2563eb",
+        "divider":            "#e8eaf0",
+        "notes_bg":           "#f9fafb",
+        "notes_border":       "#e8eaf0",
+        "page_footer_color":  "#94a3b8",
+    },
+    "dark": {
+        "font":               "'Helvetica Neue', Arial, sans-serif",
+        "bg":                 "#0f172a",
+        "bg_card":            "#1e293b",
+        "bg_card_border":     "#334155",
+        "bg_tbl_head":        "#334155",
+        "bg_tbl_row_alt":     "#1e293b",
+        "text":               "#e2e8f0",
+        "text_muted":         "#94a3b8",
+        "text_light":         "#64748b",
+        "primary":            "#60a5fa",
+        "accent":             "#a78bfa",
+        "border":             "#334155",
+        "cover_bg":           "linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)",
+        "cover_text":         "#f1f5f9",
+        "cover_sub":          "#94a3b8",
+        "cover_meta_bg":      "rgba(255,255,255,0.07)",
+        "cover_meta_border":  "#334155",
+        "cover_label":        "#64748b",
+        "cover_badge_bg":     "#1e3a8a",
+        "cover_badge_text":   "#93c5fd",
+        "section_title_border": "#60a5fa",
+        "rec_num_bg":         "#1d4ed8",
+        "rec_num_text":       "#ffffff",
+        "rec_item_bg":        "#1e293b",
+        "score_good":         "#4ade80",
+        "score_ok":           "#fbbf24",
+        "score_bad":          "#f87171",
+        "kpi_value":          "#60a5fa",
+        "divider":            "#334155",
+        "notes_bg":           "#1e293b",
+        "notes_border":       "#334155",
+        "page_footer_color":  "#475569",
+    },
+    "nerd": {
+        "font":               "'Courier New', Courier, monospace",
+        "bg":                 "#0d1117",
+        "bg_card":            "#161b22",
+        "bg_card_border":     "#30363d",
+        "bg_tbl_head":        "#161b22",
+        "bg_tbl_row_alt":     "#0d1117",
+        "text":               "#c9d1d9",
+        "text_muted":         "#8b949e",
+        "text_light":         "#484f58",
+        "primary":            "#3fb950",
+        "accent":             "#58a6ff",
+        "border":             "#30363d",
+        "cover_bg":           "#0d1117",
+        "cover_text":         "#3fb950",
+        "cover_sub":          "#8b949e",
+        "cover_meta_bg":      "#161b22",
+        "cover_meta_border":  "#3fb950",
+        "cover_label":        "#58a6ff",
+        "cover_badge_bg":     "#0d2b0d",
+        "cover_badge_text":   "#3fb950",
+        "section_title_border": "#3fb950",
+        "rec_num_bg":         "#0d2b0d",
+        "rec_num_text":       "#3fb950",
+        "rec_item_bg":        "#161b22",
+        "score_good":         "#3fb950",
+        "score_ok":           "#e3b341",
+        "score_bad":          "#f85149",
+        "kpi_value":          "#3fb950",
+        "divider":            "#30363d",
+        "notes_bg":           "#161b22",
+        "notes_border":       "#30363d",
+        "page_footer_color":  "#484f58",
+    },
+    "color": {
+        "font":               "'Helvetica Neue', Arial, sans-serif",
+        "bg":                 "#fafafa",
+        "bg_card":            "#ffffff",
+        "bg_card_border":     "#f0f0f0",
+        "bg_tbl_head":        "#f43f5e",
+        "bg_tbl_row_alt":     "#fff5f7",
+        "text":               "#1e293b",
+        "text_muted":         "#64748b",
+        "text_light":         "#94a3b8",
+        "primary":            "#f43f5e",
+        "accent":             "#f97316",
+        "border":             "#e5e7eb",
+        "cover_bg":           "linear-gradient(135deg, #f43f5e 0%, #f97316 50%, #eab308 100%)",
+        "cover_text":         "#ffffff",
+        "cover_sub":          "rgba(255,255,255,0.88)",
+        "cover_meta_bg":      "rgba(255,255,255,0.25)",
+        "cover_meta_border":  "transparent",
+        "cover_label":        "rgba(255,255,255,0.7)",
+        "cover_badge_bg":     "rgba(255,255,255,0.3)",
+        "cover_badge_text":   "#ffffff",
+        "section_title_border": "#f43f5e",
+        "rec_num_bg":         "#f43f5e",
+        "rec_num_text":       "#ffffff",
+        "rec_item_bg":        "#fff5f7",
+        "score_good":         "#16a34a",
+        "score_ok":           "#d97706",
+        "score_bad":          "#dc2626",
+        "kpi_value":          "#f43f5e",
+        "divider":            "#fce7f3",
+        "notes_bg":           "#fff9f0",
+        "notes_border":       "#fed7aa",
+        "page_footer_color":  "#94a3b8",
+    },
+    "schnyder": {
+        "font":               "'Helvetica Neue', Arial, sans-serif",
+        "bg":                 "#000000",
+        "bg_card":            "#111111",
+        "bg_card_border":     "#222222",
+        "bg_tbl_head":        "#111111",
+        "bg_tbl_row_alt":     "#0a0a0a",
+        "text":               "#ffffff",
+        "text_muted":         "#a0a0a0",
+        "text_light":         "#555555",
+        "primary":            "#6CFF00",
+        "accent":             "#6CFF00",
+        "border":             "#222222",
+        "cover_bg":           "#000000",
+        "cover_text":         "#6CFF00",
+        "cover_sub":          "#a0a0a0",
+        "cover_meta_bg":      "#111111",
+        "cover_meta_border":  "#6CFF00",
+        "cover_label":        "#6CFF00",
+        "cover_badge_bg":     "#0d2000",
+        "cover_badge_text":   "#6CFF00",
+        "section_title_border": "#6CFF00",
+        "rec_num_bg":         "#0d2000",
+        "rec_num_text":       "#6CFF00",
+        "rec_item_bg":        "#0a0a0a",
+        "score_good":         "#6CFF00",
+        "score_ok":           "#FFD700",
+        "score_bad":          "#FF4444",
+        "kpi_value":          "#6CFF00",
+        "divider":            "#222222",
+        "notes_bg":           "#0a0a0a",
+        "notes_border":       "#333333",
+        "page_footer_color":  "#444444",
+    },
+}
+
+THEME_LABELS = {
+    "light":    "Light – Professionell",
+    "dark":     "Dark – Modern",
+    "nerd":     "Nerd – Terminal",
+    "color":    "Color – Lebhaft",
+    "schnyder": "Schnyder – Agentur",
+}
+
+# ── HTML Template (uses CSS custom properties) ────────────────────────────────
 
 TEMPLATE = """<!DOCTYPE html>
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #1a1a2e; font-size: 13px; line-height: 1.5; }
+/* ── Theme variables ── */
+:root {
+  --font:             {{ t.font }};
+  --bg:               {{ t.bg }};
+  --bg-card:          {{ t.bg_card }};
+  --bg-card-border:   {{ t.bg_card_border }};
+  --bg-tbl-head:      {{ t.bg_tbl_head }};
+  --bg-tbl-alt:       {{ t.bg_tbl_row_alt }};
+  --text:             {{ t.text }};
+  --text-muted:       {{ t.text_muted }};
+  --text-light:       {{ t.text_light }};
+  --primary:          {{ t.primary }};
+  --accent:           {{ t.accent }};
+  --border:           {{ t.border }};
+  --cover-bg:         {{ t.cover_bg }};
+  --cover-text:       {{ t.cover_text }};
+  --cover-sub:        {{ t.cover_sub }};
+  --cover-meta-bg:    {{ t.cover_meta_bg }};
+  --cover-meta-border:{{ t.cover_meta_border }};
+  --cover-label:      {{ t.cover_label }};
+  --cover-badge-bg:   {{ t.cover_badge_bg }};
+  --cover-badge-text: {{ t.cover_badge_text }};
+  --sec-border:       {{ t.section_title_border }};
+  --rec-num-bg:       {{ t.rec_num_bg }};
+  --rec-num-text:     {{ t.rec_num_text }};
+  --rec-item-bg:      {{ t.rec_item_bg }};
+  --score-good:       {{ t.score_good }};
+  --score-ok:         {{ t.score_ok }};
+  --score-bad:        {{ t.score_bad }};
+  --kpi-value:        {{ t.kpi_value }};
+  --divider:          {{ t.divider }};
+  --notes-bg:         {{ t.notes_bg }};
+  --notes-border:     {{ t.notes_border }};
+  --footer-color:     {{ t.page_footer_color }};
+}
 
-  /* ── Cover ── */
-  .cover { min-height: 100vh; background: linear-gradient(135deg, {{ primary }} 0%, {{ accent }} 100%);
-           display: flex; flex-direction: column; justify-content: center; align-items: flex-start;
-           padding: 80px 60px; page-break-after: always; }
-  .cover-badge { background: rgba(255,255,255,0.2); color: white; font-size: 11px; font-weight: 600;
-                 letter-spacing: 2px; text-transform: uppercase; padding: 6px 16px; border-radius: 20px;
-                 margin-bottom: 32px; display: inline-block; }
-  .cover h1 { color: white; font-size: 42px; font-weight: 800; line-height: 1.15; margin-bottom: 16px; }
-  .cover h2 { color: rgba(255,255,255,0.85); font-size: 22px; font-weight: 400; margin-bottom: 48px; }
-  .cover-meta { background: rgba(255,255,255,0.15); border-radius: 12px; padding: 24px 32px;
-                display: grid; grid-template-columns: 1fr 1fr; gap: 16px; min-width: 400px; }
-  .cover-meta-item label { color: rgba(255,255,255,0.7); font-size: 11px; text-transform: uppercase;
-                           letter-spacing: 1px; display: block; margin-bottom: 2px; }
-  .cover-meta-item span { color: white; font-weight: 600; font-size: 14px; }
-  .cover-footer { position: absolute; bottom: 40px; left: 60px; color: rgba(255,255,255,0.5); font-size: 11px; }
+/* ── Base ── */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: var(--bg); color: var(--text); }
+body { font-family: var(--font); font-size: 13px; line-height: 1.55; }
 
-  /* ── Layout ── */
-  .page { padding: 48px 56px; }
-  .section { margin-bottom: 36px; }
-  h2.section-title { font-size: 18px; font-weight: 700; color: {{ primary }}; border-bottom: 2px solid {{ primary }};
-                     padding-bottom: 8px; margin-bottom: 20px; }
-  h3.subsection { font-size: 14px; font-weight: 600; color: #333; margin: 16px 0 10px; }
+/* ── Cover page ── */
+.cover {
+  min-height: 100vh;
+  background: var(--cover-bg);
+  display: flex; flex-direction: column;
+  justify-content: center; align-items: flex-start;
+  padding: 80px 60px;
+  page-break-after: always;
+  position: relative;
+}
+{% if theme_name == "schnyder" %}
+.cover::before {
+  content: "SCHNYDER\\AWERBUNG"; white-space: pre;
+  position: absolute; right: 60px; top: 80px;
+  font-size: 11px; letter-spacing: 3px;
+  color: var(--primary); opacity: 0.4;
+}
+.cover::after {
+  content: "";
+  position: absolute; bottom: 0; left: 0; right: 0;
+  height: 3px; background: var(--primary);
+}
+{% endif %}
+{% if theme_name == "nerd" %}
+.cover::before {
+  content: "$ geoboost --report --audit {{ audit_id }}";
+  position: absolute; top: 40px; left: 60px;
+  font-size: 11px; color: var(--primary); opacity: 0.7;
+  font-family: var(--font);
+}
+.cover::after {
+  content: "[ OK ] Analysis complete. Generating report...";
+  position: absolute; bottom: 48px; left: 60px;
+  font-size: 11px; color: var(--text-muted);
+  font-family: var(--font);
+}
+{% endif %}
 
-  /* ── Score cards ── */
-  .score-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
-  .score-card { background: #f8f9ff; border-radius: 10px; padding: 16px; text-align: center; border: 1px solid #e8eaf0; }
-  .score-card .label { font-size: 10px; color: #777; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; }
-  .score-card .value { font-size: 28px; font-weight: 800; }
-  .score-card .sublabel { font-size: 10px; color: #999; margin-top: 2px; }
-  .score-good { color: #16a34a; }
-  .score-ok { color: #d97706; }
-  .score-bad { color: #dc2626; }
+.cover-badge {
+  background: var(--cover-badge-bg); color: var(--cover-badge-text);
+  font-size: 11px; font-weight: 600; letter-spacing: 2px;
+  text-transform: uppercase; padding: 6px 16px;
+  border-radius: 20px; margin-bottom: 32px; display: inline-block;
+  {% if theme_name == "schnyder" %}border: 1px solid var(--primary);{% endif %}
+  {% if theme_name == "nerd" %}border: 1px solid var(--primary); border-radius: 0;{% endif %}
+}
+.cover h1 {
+  color: var(--cover-text); font-size: 42px; font-weight: 800;
+  line-height: 1.15; margin-bottom: 12px;
+  {% if theme_name == "schnyder" %}letter-spacing: -1px;{% endif %}
+  {% if theme_name == "nerd" %}letter-spacing: 0;{% endif %}
+}
+.cover h2 {
+  color: var(--cover-sub); font-size: 20px; font-weight: 400;
+  margin-bottom: 44px;
+}
+.cover-meta {
+  background: var(--cover-meta-bg);
+  border: 1px solid var(--cover-meta-border);
+  border-radius: {% if theme_name == "nerd" or theme_name == "schnyder" %}4px{% else %}12px{% endif %};
+  padding: 24px 32px;
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 16px; min-width: 400px;
+}
+.cover-meta-item label {
+  color: var(--cover-label); font-size: 10px; text-transform: uppercase;
+  letter-spacing: 1px; display: block; margin-bottom: 3px;
+}
+.cover-meta-item span { color: var(--cover-text); font-weight: 600; font-size: 14px; }
 
-  /* ── KPI grid ── */
-  .kpi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-  .kpi-item { background: #f8f9ff; border-radius: 8px; padding: 14px 16px; border: 1px solid #e8eaf0; }
-  .kpi-item .kpi-label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.8px; }
-  .kpi-item .kpi-value { font-size: 20px; font-weight: 700; color: {{ primary }}; margin-top: 2px; }
-  .kpi-item .kpi-sub { font-size: 10px; color: #aaa; }
+/* ── Layout ── */
+.page { padding: 48px 56px; background: var(--bg); }
+.section { margin-bottom: 36px; }
+h2.section-title {
+  font-size: 17px; font-weight: 700; color: var(--primary);
+  border-bottom: 2px solid var(--sec-border);
+  padding-bottom: 8px; margin-bottom: 20px;
+  {% if theme_name == "nerd" %}text-transform: uppercase; letter-spacing: 1px;{% endif %}
+}
+h3.subsection { font-size: 13px; font-weight: 600; color: var(--text); margin: 16px 0 10px; }
 
-  /* ── Tables ── */
-  table { width: 100%; border-collapse: collapse; font-size: 12px; }
-  th { background: {{ primary }}; color: white; padding: 8px 12px; text-align: left; font-weight: 600; font-size: 11px; }
-  td { padding: 7px 12px; border-bottom: 1px solid #eef0f6; }
-  tr:nth-child(even) td { background: #f9fafb; }
-  tr:last-child td { border-bottom: none; }
-  .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; }
-  .badge-error { background: #fee2e2; color: #dc2626; }
-  .badge-warning { background: #fef3c7; color: #d97706; }
-  .badge-ok { background: #dcfce7; color: #16a34a; }
-  .badge-notice { background: #ede9fe; color: #7c3aed; }
+/* ── Score cards ── */
+.score-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+.score-card {
+  background: var(--bg-card);
+  border: 1px solid var(--bg-card-border);
+  border-radius: {% if theme_name == "nerd" or theme_name == "schnyder" %}4px{% else %}10px{% endif %};
+  padding: 16px; text-align: center;
+}
+.score-card .label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; }
+.score-card .value { font-size: 28px; font-weight: 800; }
+.score-card .sublabel { font-size: 10px; color: var(--text-light); margin-top: 2px; }
+.score-good { color: var(--score-good); }
+.score-ok   { color: var(--score-ok); }
+.score-bad  { color: var(--score-bad); }
 
-  /* ── Issues ── */
-  .issue-list { display: flex; flex-direction: column; gap: 8px; }
-  .issue-item { background: #fff; border: 1px solid #e8eaf0; border-radius: 8px; padding: 12px 16px;
-                border-left: 4px solid #e5e7eb; }
-  .issue-item.error { border-left-color: #dc2626; }
-  .issue-item.warning { border-left-color: #f59e0b; }
-  .issue-item.notice { border-left-color: #8b5cf6; }
-  .issue-title { font-weight: 600; font-size: 12px; margin-bottom: 2px; }
-  .issue-meta { font-size: 11px; color: #888; }
+/* ── KPI grid ── */
+.kpi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.kpi-item {
+  background: var(--bg-card);
+  border: 1px solid var(--bg-card-border);
+  border-radius: {% if theme_name == "nerd" or theme_name == "schnyder" %}4px{% else %}8px{% endif %};
+  padding: 14px 16px;
+  {% if theme_name == "schnyder" %}border-left: 3px solid var(--primary);{% endif %}
+}
+.kpi-item .kpi-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; }
+.kpi-item .kpi-value { font-size: 20px; font-weight: 700; color: var(--kpi-value); margin-top: 2px; }
+.kpi-item .kpi-sub   { font-size: 10px; color: var(--text-light); }
 
-  /* ── Recommendations ── */
-  .rec-list { counter-reset: rec; display: flex; flex-direction: column; gap: 10px; }
-  .rec-item { display: flex; gap: 14px; align-items: flex-start; background: #f8f9ff; border-radius: 10px; padding: 14px 16px; }
-  .rec-num { background: {{ primary }}; color: white; font-size: 13px; font-weight: 800; min-width: 28px; height: 28px;
-             border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
-  .rec-content .rec-title { font-weight: 700; font-size: 13px; margin-bottom: 3px; }
-  .rec-content .rec-desc { font-size: 12px; color: #555; }
+/* ── Tables ── */
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+th {
+  background: var(--bg-tbl-head); color: {% if theme_name == "nerd" %}var(--primary){% elif theme_name == "schnyder" %}var(--primary){% else %}#ffffff{% endif %};
+  padding: 8px 12px; text-align: left; font-weight: 600; font-size: 11px;
+  {% if theme_name == "nerd" %}border-bottom: 1px solid var(--primary);{% endif %}
+  {% if theme_name == "schnyder" %}border-bottom: 2px solid var(--primary);{% endif %}
+}
+td { padding: 7px 12px; border-bottom: 1px solid var(--border); color: var(--text); }
+tr:nth-child(even) td { background: var(--bg-tbl-alt); }
+tr:last-child td { border-bottom: none; }
 
-  /* ── Divider ── */
-  .divider { border: none; border-top: 1px solid #eef0f6; margin: 24px 0; }
-  .page-break { page-break-before: always; }
+/* ── Badges ── */
+.badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; }
+.badge-error   { background: {% if theme_name == "dark" or theme_name == "nerd" or theme_name == "schnyder" %}#3b0000{% else %}#fee2e2{% endif %}; color: {% if theme_name == "dark" or theme_name == "nerd" or theme_name == "schnyder" %}#f87171{% else %}#dc2626{% endif %}; }
+.badge-warning { background: {% if theme_name == "dark" or theme_name == "nerd" or theme_name == "schnyder" %}#2d1b00{% else %}#fef3c7{% endif %}; color: {% if theme_name == "dark" or theme_name == "nerd" or theme_name == "schnyder" %}#fbbf24{% else %}#d97706{% endif %}; }
+.badge-ok      { background: {% if theme_name == "dark" or theme_name == "nerd" %}#002b0d{% elif theme_name == "schnyder" %}#0d2000{% else %}#dcfce7{% endif %}; color: var(--score-good); }
+.badge-notice  { background: {% if theme_name == "dark" or theme_name == "nerd" or theme_name == "schnyder" %}#1a0040{% else %}#ede9fe{% endif %}; color: {% if theme_name == "dark" or theme_name == "nerd" or theme_name == "schnyder" %}#a78bfa{% else %}#7c3aed{% endif %}; }
 
-  /* ── Footer ── */
-  @page { @bottom-right { content: "{{ company }} · Seite " counter(page); font-size: 10px; color: #aaa; } }
+/* ── Issue cards ── */
+.issue-list { display: flex; flex-direction: column; gap: 8px; }
+.issue-item {
+  background: var(--bg-card);
+  border: 1px solid var(--bg-card-border);
+  border-left: 4px solid var(--border);
+  border-radius: {% if theme_name == "nerd" or theme_name == "schnyder" %}4px{% else %}8px{% endif %};
+  padding: 12px 16px;
+}
+.issue-item.error   { border-left-color: var(--score-bad); }
+.issue-item.warning { border-left-color: var(--score-ok); }
+.issue-item.notice  { border-left-color: #8b5cf6; }
+.issue-title { font-weight: 600; font-size: 12px; margin-bottom: 2px; color: var(--text); }
+.issue-meta  { font-size: 11px; color: var(--text-muted); }
 
-  /* ── Notes box ── */
-  .notes-box { background: #fafafa; border: 1px solid #e8eaf0; border-radius: 8px; padding: 16px; font-size: 12px; white-space: pre-wrap; }
-  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+/* ── Recommendations ── */
+.rec-list { display: flex; flex-direction: column; gap: 10px; }
+.rec-item {
+  display: flex; gap: 14px; align-items: flex-start;
+  background: var(--rec-item-bg);
+  border-radius: {% if theme_name == "nerd" or theme_name == "schnyder" %}4px{% else %}10px{% endif %};
+  padding: 14px 16px;
+  {% if theme_name == "schnyder" %}border-left: 3px solid var(--primary);{% endif %}
+}
+.rec-num {
+  background: var(--rec-num-bg); color: var(--rec-num-text);
+  font-size: 13px; font-weight: 800; min-width: 28px; height: 28px;
+  border-radius: {% if theme_name == "nerd" or theme_name == "schnyder" %}4px{% else %}50%{% endif %};
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-top: 1px;
+  {% if theme_name == "schnyder" %}border: 1px solid var(--primary);{% endif %}
+}
+.rec-content .rec-title { font-weight: 700; font-size: 13px; margin-bottom: 3px; color: var(--text); }
+.rec-content .rec-desc  { font-size: 12px; color: var(--text-muted); }
+
+/* ── Misc ── */
+.divider { border: none; border-top: 1px solid var(--divider); margin: 24px 0; }
+.page-break { page-break-before: always; }
+.notes-box {
+  background: var(--notes-bg);
+  border: 1px solid var(--notes-border);
+  border-radius: {% if theme_name == "nerd" or theme_name == "schnyder" %}4px{% else %}8px{% endif %};
+  padding: 16px; font-size: 12px; white-space: pre-wrap;
+  color: var(--text);
+}
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+@page { @bottom-right { content: "{{ company }} · Seite " counter(page); font-size: 10px; color: var(--footer-color); } }
 </style>
 </head>
 <body>
 
 <!-- ══ Cover ══════════════════════════════════════════════════════════════ -->
 <div class="cover">
-  <div class="cover-badge">Website-Analyse</div>
-  <h1>{{ client_name }}</h1>
-  <h2>{{ website_url }}</h2>
+  <div class="cover-badge">Website-Analyse{% if theme_name == "nerd" %} :: audit_{{ audit_id }}{% endif %}</div>
+  <h1>{{ client_name or "Unbekannter Kunde" }}</h1>
+  <h2>{{ website_url or "" }}</h2>
   <div class="cover-meta">
-    <div class="cover-meta-item"><label>Analysezeitraum</label><span>{{ analysis_period }}</span></div>
+    <div class="cover-meta-item"><label>Analysezeitraum</label><span>{{ analysis_period or "–" }}</span></div>
     <div class="cover-meta-item"><label>Analysedatum</label><span>{{ analysis_date }}</span></div>
-    <div class="cover-meta-item"><label>Ansprechpartner Kunde</label><span>{{ responsible_person or '–' }}</span></div>
+    <div class="cover-meta-item"><label>Ansprechpartner Kunde</label><span>{{ responsible_person or "–" }}</span></div>
     <div class="cover-meta-item"><label>Erstellt von</label><span>{{ analyst_name or company }}</span></div>
   </div>
 </div>
@@ -118,14 +437,14 @@ TEMPLATE = """<!DOCTYPE html>
 {% if traffic %}
 <div class="page">
   <div class="section">
-    <h2 class="section-title">1. Traffic-Übersicht (GA4)</h2>
+    <h2 class="section-title">{% if theme_name == "nerd" %}// {% endif %}1. Traffic-Übersicht (GA4)</h2>
     <div class="kpi-grid">
-      {% if traffic.sessions_total %}<div class="kpi-item"><div class="kpi-label">Sessions gesamt</div><div class="kpi-value">{{ traffic.sessions_total | fmt_num }}</div></div>{% endif %}
-      {% if traffic.new_users_total %}<div class="kpi-item"><div class="kpi-label">Neue Nutzer</div><div class="kpi-value">{{ traffic.new_users_total | fmt_num }}</div></div>{% endif %}
-      {% if traffic.bounce_rate %}<div class="kpi-item"><div class="kpi-label">Absprungrate</div><div class="kpi-value">{{ traffic.bounce_rate }}%</div></div>{% endif %}
+      {% if traffic.sessions_total is not none %}<div class="kpi-item"><div class="kpi-label">Sessions gesamt</div><div class="kpi-value">{{ traffic.sessions_total | fmt_num }}</div></div>{% endif %}
+      {% if traffic.new_users_total is not none %}<div class="kpi-item"><div class="kpi-label">Neue Nutzer</div><div class="kpi-value">{{ traffic.new_users_total | fmt_num }}</div></div>{% endif %}
+      {% if traffic.bounce_rate is not none %}<div class="kpi-item"><div class="kpi-label">Absprungrate</div><div class="kpi-value">{{ traffic.bounce_rate }}%</div></div>{% endif %}
       {% if traffic.avg_session_duration %}<div class="kpi-item"><div class="kpi-label">Ø Sitzungsdauer</div><div class="kpi-value">{{ traffic.avg_session_duration }}</div></div>{% endif %}
-      {% if traffic.conversions_total %}<div class="kpi-item"><div class="kpi-label">Conversions</div><div class="kpi-value">{{ traffic.conversions_total | fmt_num }}</div></div>{% endif %}
-      {% if traffic.conversion_rate %}<div class="kpi-item"><div class="kpi-label">Conv.-Rate</div><div class="kpi-value">{{ traffic.conversion_rate }}%</div></div>{% endif %}
+      {% if traffic.conversions_total is not none %}<div class="kpi-item"><div class="kpi-label">Conversions</div><div class="kpi-value">{{ traffic.conversions_total | fmt_num }}</div></div>{% endif %}
+      {% if traffic.conversion_rate is not none %}<div class="kpi-item"><div class="kpi-label">Conv.-Rate</div><div class="kpi-value">{{ traffic.conversion_rate }}%</div></div>{% endif %}
     </div>
 
     {% if traffic.channel_breakdown %}
@@ -161,17 +480,17 @@ TEMPLATE = """<!DOCTYPE html>
 {% if crawl %}
 <div class="page page-break">
   <div class="section">
-    <h2 class="section-title">2. Technische SEO (Screaming Frog)</h2>
+    <h2 class="section-title">{% if theme_name == "nerd" %}// {% endif %}2. Technische SEO (Screaming Frog)</h2>
     {% if crawl.summary %}
-    <div class="kpi-grid">
-      <div class="kpi-item"><div class="kpi-label">URLs gecrawlt</div><div class="kpi-value">{{ crawl.summary.total_urls | fmt_num }}</div></div>
-      <div class="kpi-item"><div class="kpi-label">200 OK</div><div class="kpi-value" style="color:#16a34a">{{ crawl.summary.ok_200 | fmt_num }}</div></div>
-      <div class="kpi-item"><div class="kpi-label">3xx Weiterleit.</div><div class="kpi-value" style="color:#d97706">{{ crawl.summary.redirects_3xx | fmt_num }}</div></div>
-      <div class="kpi-item"><div class="kpi-label">4xx/5xx Fehler</div><div class="kpi-value" style="color:#dc2626">{{ (crawl.summary.errors_4xx + crawl.summary.errors_5xx) | fmt_num }}</div></div>
+    <div class="kpi-grid" style="grid-template-columns: repeat(4,1fr)">
+      <div class="kpi-item"><div class="kpi-label">URLs gecrawlt</div><div class="kpi-value" style="color:var(--kpi-value)">{{ crawl.summary.total_urls | fmt_num }}</div></div>
+      <div class="kpi-item"><div class="kpi-label">200 OK</div><div class="kpi-value" style="color:var(--score-good)">{{ crawl.summary.ok_200 | fmt_num }}</div></div>
+      <div class="kpi-item"><div class="kpi-label">3xx Weiterleit.</div><div class="kpi-value" style="color:var(--score-ok)">{{ crawl.summary.redirects_3xx | fmt_num }}</div></div>
+      <div class="kpi-item"><div class="kpi-label">4xx/5xx Fehler</div><div class="kpi-value" style="color:var(--score-bad)">{{ (crawl.summary.errors_4xx + crawl.summary.errors_5xx) | fmt_num }}</div></div>
       <div class="kpi-item"><div class="kpi-label">Fehl. Title</div><div class="kpi-value">{{ crawl.summary.missing_title | fmt_num }}</div></div>
       <div class="kpi-item"><div class="kpi-label">Fehl. Meta Desc.</div><div class="kpi-value">{{ crawl.summary.missing_meta | fmt_num }}</div></div>
       <div class="kpi-item"><div class="kpi-label">Fehl. H1</div><div class="kpi-value">{{ crawl.summary.missing_h1 | fmt_num }}</div></div>
-      <div class="kpi-item"><div class="kpi-label">Langsame Seiten</div><div class="kpi-value">{{ crawl.summary.slow_pages | fmt_num }}</div></div>
+      <div class="kpi-item"><div class="kpi-label">Langsame Seiten</div><div class="kpi-value" style="color:var(--score-ok)">{{ crawl.summary.slow_pages | fmt_num }}</div></div>
     </div>
     {% endif %}
 
@@ -182,7 +501,7 @@ TEMPLATE = """<!DOCTYPE html>
       <tbody>
         {% for issue in crawl.issues[:30] %}
         <tr>
-          <td style="font-size:10px;word-break:break-all">{{ issue.url }}</td>
+          <td style="font-size:10px;word-break:break-all;color:var(--text-muted)">{{ issue.url }}</td>
           <td><span class="badge {{ 'badge-error' if issue.status_code >= 400 else 'badge-warning' if issue.status_code >= 300 else 'badge-ok' }}">{{ issue.status_code }}</span></td>
           <td><span class="badge {{ 'badge-error' if issue.title_issue == 'missing' else 'badge-warning' if issue.title_issue != 'ok' else 'badge-ok' }}">{{ issue.title_issue }}</span></td>
           <td><span class="badge {{ 'badge-error' if issue.h1_issue == 'missing' else 'badge-ok' }}">{{ issue.h1_issue }}</span></td>
@@ -205,12 +524,12 @@ TEMPLATE = """<!DOCTYPE html>
 {% if semrush %}
 <div class="page page-break">
   <div class="section">
-    <h2 class="section-title">3. SemRush Site Audit</h2>
+    <h2 class="section-title">{% if theme_name == "nerd" %}// {% endif %}3. SemRush Site Audit</h2>
     {% if semrush.summary %}
     <div class="kpi-grid" style="grid-template-columns: repeat(3,1fr)">
-      <div class="kpi-item"><div class="kpi-label">Fehler</div><div class="kpi-value" style="color:#dc2626">{{ semrush.summary.errors | fmt_num }}</div></div>
-      <div class="kpi-item"><div class="kpi-label">Warnungen</div><div class="kpi-value" style="color:#d97706">{{ semrush.summary.warnings | fmt_num }}</div></div>
-      <div class="kpi-item"><div class="kpi-label">Hinweise</div><div class="kpi-value" style="color:#7c3aed">{{ semrush.summary.notices | fmt_num }}</div></div>
+      <div class="kpi-item" style="border-left: 3px solid var(--score-bad)"><div class="kpi-label">Fehler</div><div class="kpi-value" style="color:var(--score-bad)">{{ semrush.summary.errors | fmt_num }}</div></div>
+      <div class="kpi-item" style="border-left: 3px solid var(--score-ok)"><div class="kpi-label">Warnungen</div><div class="kpi-value" style="color:var(--score-ok)">{{ semrush.summary.warnings | fmt_num }}</div></div>
+      <div class="kpi-item" style="border-left: 3px solid #8b5cf6"><div class="kpi-label">Hinweise</div><div class="kpi-value" style="color:#8b5cf6">{{ semrush.summary.notices | fmt_num }}</div></div>
     </div>
     {% endif %}
 
@@ -241,10 +560,10 @@ TEMPLATE = """<!DOCTYPE html>
 {% if lighthouse %}
 <div class="page page-break">
   <div class="section">
-    <h2 class="section-title">4. PageSpeed &amp; Core Web Vitals</h2>
+    <h2 class="section-title">{% if theme_name == "nerd" %}// {% endif %}4. PageSpeed &amp; Core Web Vitals</h2>
     <div class="two-col">
       <div>
-        <h3 class="subsection">Mobile</h3>
+        <h3 class="subsection">📱 Mobile</h3>
         <div class="score-grid" style="grid-template-columns: repeat(2,1fr)">
           {% if lighthouse.mobile_performance is not none %}
           <div class="score-card"><div class="label">Performance</div>
@@ -265,7 +584,7 @@ TEMPLATE = """<!DOCTYPE html>
         </div>
       </div>
       <div>
-        <h3 class="subsection">Desktop</h3>
+        <h3 class="subsection">🖥️ Desktop</h3>
         <div class="score-grid" style="grid-template-columns: repeat(2,1fr)">
           {% if lighthouse.desktop_performance is not none %}
           <div class="score-card"><div class="label">Performance</div>
@@ -307,7 +626,7 @@ TEMPLATE = """<!DOCTYPE html>
 <!-- ══ 5. Fazit & Empfehlungen ════════════════════════════════════════════ -->
 <div class="page page-break">
   <div class="section">
-    <h2 class="section-title">5. Fazit &amp; Empfehlungen</h2>
+    <h2 class="section-title">{% if theme_name == "nerd" %}// {% endif %}5. Fazit &amp; Empfehlungen</h2>
 
     {% if findings %}
     <h3 class="subsection">Wichtigste Erkenntnisse</h3>
@@ -335,10 +654,9 @@ TEMPLATE = """<!DOCTYPE html>
     {% endif %}
   </div>
 
-  <!-- Footer info -->
   <hr class="divider">
-  <div style="font-size:11px; color:#aaa; text-align:center">
-    Erstellt mit GeoBoost &mdash; {{ analysis_date }} &mdash; {{ company }}
+  <div style="font-size:11px; color:var(--footer-color); text-align:center">
+    Erstellt mit GeoBoost &mdash; {{ analysis_date }} &mdash; {{ company }}{% if theme_name == "schnyder" %} &mdash; schnyder-werbung.ch{% endif %}
   </div>
 </div>
 
@@ -350,9 +668,7 @@ TEMPLATE = """<!DOCTYPE html>
 class AuditPDFGenerator:
     def __init__(self, config: Dict = None):
         self.config = config or {}
-        self.primary = config.get("primary_color", "#1a56db") if config else "#1a56db"
-        self.accent = config.get("accent_color", "#7e3af2") if config else "#7e3af2"
-        self.company = config.get("company_name", "GeoBoost") if config else "GeoBoost"
+        self.company = self.config.get("company_name", "GeoBoost")
 
     def _fmt_num(self, v) -> str:
         try:
@@ -360,23 +676,24 @@ class AuditPDFGenerator:
         except Exception:
             return str(v) if v is not None else "–"
 
-    def generate(self, audit: Dict[str, Any], output_path: str) -> str:
-        """Generate PDF from audit data and return output path."""
+    def generate(self, audit: Dict[str, Any], output_path: str, theme: str = "light") -> str:
+        """Generate PDF from audit data. theme: light | dark | nerd | color | schnyder"""
         import weasyprint
         from jinja2 import Environment
+
+        t = THEMES.get(theme, THEMES["light"])
 
         env = Environment()
         env.filters["fmt_num"] = self._fmt_num
         env.filters["fmt_pct"] = lambda v: f"{float(v):.1f}%" if v else "–"
 
-        kickoff = audit.get("step0_kickoff") or {}
-        traffic = audit.get("step1_website") or {}
-        crawl = audit.get("step2_crawl") or {}
-        semrush = audit.get("step3_semrush") or {}
+        kickoff    = audit.get("step0_kickoff") or {}
+        traffic    = audit.get("step1_website") or {}
+        crawl      = audit.get("step2_crawl") or {}
+        semrush    = audit.get("step3_semrush") or {}
         lighthouse = audit.get("step4_lighthouse") or {}
-        notes = audit.get("step5_notes") or {}
+        notes      = audit.get("step5_notes") or {}
 
-        # Build recommendations list from free-text or structured
         recs_raw = notes.get("recommendations", "")
         recommendations = []
         if isinstance(recs_raw, list):
@@ -388,9 +705,10 @@ class AuditPDFGenerator:
                     recommendations.append({"title": line, "description": ""})
 
         ctx = dict(
+            t=t,
+            theme_name=theme,
             company=self.company,
-            primary=self.primary,
-            accent=self.accent,
+            audit_id=audit.get("id", ""),
             client_name=audit.get("client_name") or kickoff.get("client_name", ""),
             website_url=audit.get("website_url") or kickoff.get("website_url", ""),
             analysis_period=kickoff.get("analysis_period", ""),

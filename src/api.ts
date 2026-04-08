@@ -342,7 +342,17 @@ export const uploadSemrushCsv = async (auditId: number, file: File): Promise<Ste
 export const fetchLighthouseForAudit = (auditId: number, websiteUrl: string) =>
   post<Step4Lighthouse>(`/audits/${auditId}/lighthouse/fetch`, { website_url: websiteUrl });
 
-export const generateAuditPdf = (auditId: number) =>
-  post<{ pdf_path: string }>(`/audits/${auditId}/report/generate`, {});
+export type AuditTheme = "light" | "dark" | "nerd" | "color" | "schnyder";
+
+export const AUDIT_THEMES: { id: AuditTheme; label: string; preview: string; bg: string; text: string; accent: string }[] = [
+  { id: "light",    label: "Light",    preview: "Professionell & sauber",  bg: "#ffffff",  text: "#1e293b", accent: "#2563eb" },
+  { id: "dark",     label: "Dark",     preview: "Modern & dunkel",         bg: "#0f172a",  text: "#e2e8f0", accent: "#60a5fa" },
+  { id: "nerd",     label: "Nerd",     preview: "Terminal-Stil",           bg: "#0d1117",  text: "#c9d1d9", accent: "#3fb950" },
+  { id: "color",    label: "Color",    preview: "Farbenfroh & lebendig",   bg: "#fafafa",  text: "#1e293b", accent: "#f43f5e" },
+  { id: "schnyder", label: "Schnyder", preview: "Agentur-Branding",        bg: "#000000",  text: "#ffffff", accent: "#6CFF00" },
+];
+
+export const generateAuditPdf = (auditId: number, theme: AuditTheme = "light") =>
+  post<{ pdf_path: string }>(`/audits/${auditId}/report/generate`, { theme });
 
 export const getAuditPdfUrl = (auditId: number) => `${BASE}/audits/${auditId}/report/pdf`;

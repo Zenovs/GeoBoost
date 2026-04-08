@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import type { Step5Notes } from "../../../api";
-import { generateAuditPdf, getAuditPdfUrl } from "../../../api";
+import type { Step5Notes, AuditTheme } from "../../../api";
+import { generateAuditPdf, getAuditPdfUrl, AUDIT_THEMES } from "../../../api";
 import { invoke } from "@tauri-apps/api/core";
 
 interface Props {
@@ -19,6 +19,7 @@ const EMPTY: Step5Notes = {
 
 export default function Step5Report({ auditId, pdfPath, initial, onChange, onPdfGenerated }: Props) {
   const [data, setData] = useState<Step5Notes>({ ...EMPTY, ...initial });
+  const [theme, setTheme] = useState<AuditTheme>("light");
   const [generating, setGenerating] = useState(false);
   const [err, setErr] = useState("");
 
@@ -30,7 +31,7 @@ export default function Step5Report({ auditId, pdfPath, initial, onChange, onPdf
     setGenerating(true);
     setErr("");
     try {
-      const result = await generateAuditPdf(auditId);
+      const result = await generateAuditPdf(auditId, theme);
       onPdfGenerated(result.pdf_path);
     } catch (e: unknown) {
       setErr(e instanceof Error ? e.message : "PDF-Generierung fehlgeschlagen.");
@@ -50,7 +51,7 @@ export default function Step5Report({ auditId, pdfPath, initial, onChange, onPdf
     <div>
       <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>Fazit &amp; Bericht generieren</h3>
       <p style={{ fontSize: 13, color: "var(--gray-500,#6b7280)", marginBottom: 24 }}>
-        Füge deine Schlussfolgerungen und Empfehlungen hinzu, dann generiere den PDF-Bericht.
+        Füge deine Schlussfolgerungen und Empfehlungen hinzu, wähle ein Theme und generiere den PDF-Bericht.
       </p>
 
       <label className="form-group">
@@ -89,7 +90,47 @@ export default function Step5Report({ auditId, pdfPath, initial, onChange, onPdf
         />
       </label>
 
-      <div style={{ marginTop: 28, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+      {/* ── Theme Picker ── */}
+      <div style={{ marginTop: 28 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: "var(--gray-700,#374151)", marginBottom: 12 }}>
+          Theme auswählen
+        </div>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          {AUDIT_THEMES.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => setTheme(t.id)}
+              style={{
+                background: t.bg,
+                border: `2px solid ${theme === t.id ? t.accent : "transparent"}`,
+                borderRadius: 10,
+                padding: "10px 14px",
+                cursor: "pointer",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-start",
+                gap: 4,
+                minWidth: 110,
+                outline: theme === t.id ? `3px solid ${t.accent}44` : "none",
+                transition: "all 0.15s",
+                boxShadow: theme === t.id ? `0 0 0 3px ${t.accent}33` : "0 1px 4px rgba(0,0,0,0.12)",
+              }}
+            >
+              {/* Mini preview bar */}
+              <div style={{ width: "100%", height: 6, borderRadius: 3, background: t.accent, marginBottom: 4 }} />
+              <span style={{ fontSize: 13, fontWeight: 700, color: t.text }}>{t.label}</span>
+              <span style={{ fontSize: 10, color: t.text, opacity: 0.65 }}>{t.preview}</span>
+              {theme === t.id && (
+                <span style={{ fontSize: 10, color: t.accent, fontWeight: 700, marginTop: 2 }}>✓ Ausgewählt</span>
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Generate button ── */}
+      <div style={{ marginTop: 24, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
         <button
           type="button"
           onClick={handleGenerate}
@@ -108,14 +149,7 @@ export default function Step5Report({ auditId, pdfPath, initial, onChange, onPdf
             gap: 8,
           }}
         >
-          {generating ? (
-            <>
-              <span style={{ animation: "spin 1s linear infinite", display: "inline-block" }}>⏳</span>
-              PDF wird erstellt...
-            </>
-          ) : (
-            "📄 PDF-Bericht erstellen"
-          )}
+          {generating ? "⏳ PDF wird erstellt..." : "📄 PDF-Bericht erstellen"}
         </button>
 
         {pdfPath && (
@@ -137,9 +171,7 @@ export default function Step5Report({ auditId, pdfPath, initial, onChange, onPdf
           </button>
         )}
 
-        {err && (
-          <span style={{ fontSize: 13, color: "#dc2626" }}>{err}</span>
-        )}
+        {err && <span style={{ fontSize: 13, color: "#dc2626" }}>{err}</span>}
       </div>
 
       {pdfPath && (
