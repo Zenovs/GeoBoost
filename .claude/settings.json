@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(chmod +x /Users/dariozenhaeusern/Github/GeoBoost/start.sh /Users/dariozenhaeusern/Github/GeoBoost/install.sh /Users/dariozenhaeusern/Github/GeoBoost/backend/start_backend.sh)",
+      "Bash(npm install:*)",
+      "Bash(npx tsc:*)",
+      "Bash(python3 -c ':*)",
+      "Bash(python3 -m venv venv)"
+    ]
+  }
+}

@@ -1,8 +1,12 @@
 {
-  "storage_path": "~/Documents/GA4_SEO_Projects",
-  "google_credentials_path": "path/to/service-account.json",
-  "pagespeed_api_key": "YOUR_PAGESPEED_API_KEY",
+  "storage_path": "~/Documents/GeoBoost_Projects",
+  "google_credentials_path": "",
+  "pagespeed_api_key": "",
   "ollama_model": "llama3.1:8b",
   "crawler_max_depth": 3,
-  "crawler_max_urls": 500
+  "crawler_max_urls": 200,
+  "primary_color": "#1a56db",
+  "accent_color": "#7e3af2",
+  "company_name": "GeoBoost",
+  "company_contact": ""
 }

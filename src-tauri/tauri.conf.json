@@ -1,19 +1,36 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/schema.json",
+  "productName": "GeoBoost",
+  "version": "1.0.0",
+  "identifier": "app.geoboost.analyzer",
   "build": {
     "beforeBuildCommand": "npm run build",
     "beforeDevCommand": "npm run dev",
-    "devPath": "http://localhost:1420",
-    "distDir": "../dist"
+    "devUrl": "http://localhost:1420",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "GeoBoost – GA4 & SEO Analyse",
+        "width": 1200,
+        "height": 780,
+        "minWidth": 900,
+        "minHeight": 600,
+        "resizable": true,
+        "fullscreen": false,
+        "center": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; connect-src 'self' http://127.0.0.1:8765 https://fonts.googleapis.com https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: asset: https://asset.localhost; font-src 'self' https://fonts.gstatic.com data:"
+    }
   },
   "bundle": {
     "active": true,
+    "targets": "all",
     "category": "DeveloperTool",
-    "copyright": "",
-    "deb": {
-      "depends": []
-    },
-    "externalBin": [],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -21,8 +38,6 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "identifier": "com.ga4seo.analyzer",
-    "longDescription": "",
     "macOS": {
       "entitlements": null,
       "exceptionDomain": "",
@@ -30,17 +45,15 @@
       "providerShortName": null,
       "signingIdentity": null
     },
-    "resources": [],
-    "shortDescription": "",
-    "targets": "all",
     "windows": {
       "certificateThumbprint": null,
       "digestAlgorithm": "sha256",
       "timestampUrl": ""
     }
   },
-  "identifier": "com.ga4seo.analyzer",
-  "plugins": {},
-  "productName": "GA4 SEO Analyzer",
-  "version": "1.0.0"
+  "plugins": {
+    "shell": {
+      "open": true
+    }
+  }
 }

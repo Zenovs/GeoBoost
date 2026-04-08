@@ -1,28 +1,896 @@
 <!DOCTYPE html>
-<html>
+<html lang="de">
 <head>
-    <title>GA4 SEO Analyse</title>
-    <style>
-        body { font-family: Arial, sans-serif; }
-        h1 { color: #333; }
-        table { border-collapse: collapse; width: 100%; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background-color: #f2f2f2; }
-    </style>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+  :root {
+    --primary: {{ primary_color }};
+    --accent: {{ accent_color }};
+    --gray-100: #f9fafb;
+    --gray-200: #f3f4f6;
+    --gray-400: #9ca3af;
+    --gray-600: #4b5563;
+    --gray-700: #374151;
+    --gray-800: #1f2937;
+    --red: #ef4444;
+    --orange: #f97316;
+    --green: #10b981;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 10pt;
+    color: var(--gray-800);
+    line-height: 1.55;
+    background: white;
+  }
+
+  /* ── Page Layout ── */
+  @page {
+    size: A4;
+    margin: 18mm 16mm 20mm 16mm;
+    @bottom-right { content: counter(page) " / " counter(pages); font-size: 8pt; color: #9ca3af; }
+  }
+
+  .page { page-break-after: always; min-height: 237mm; position: relative; }
+  .page:last-child { page-break-after: auto; }
+
+  /* ── Header ── */
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid var(--primary);
+    padding-bottom: 6px;
+    margin-bottom: 18px;
+  }
+  .page-header .brand { font-size: 11pt; font-weight: 700; color: var(--primary); letter-spacing: 0.5px; }
+  .page-header .page-title { font-size: 9pt; color: var(--gray-400); font-weight: 400; }
+
+  /* ── Cover ── */
+  .cover {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 237mm;
+    padding: 30mm 10mm;
+    background: linear-gradient(160deg, var(--gray-100) 0%, white 100%);
+  }
+  .cover-tag { font-size: 9pt; font-weight: 600; color: var(--primary); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 16px; }
+  .cover-title { font-size: 32pt; font-weight: 700; color: var(--gray-800); line-height: 1.1; margin-bottom: 8px; }
+  .cover-subtitle { font-size: 14pt; font-weight: 400; color: var(--gray-600); margin-bottom: 32px; }
+  .cover-meta {
+    display: flex; flex-direction: column; gap: 6px;
+    padding: 20px; background: white;
+    border-left: 4px solid var(--primary); border-radius: 0 8px 8px 0;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06); min-width: 340px;
+  }
+  .cover-meta-row { display: flex; gap: 12px; font-size: 10pt; }
+  .cover-meta-label { color: var(--gray-400); min-width: 120px; font-weight: 500; }
+  .cover-meta-value { color: var(--gray-800); font-weight: 600; }
+  .cover-footer { position: absolute; bottom: 20mm; left: 16mm; font-size: 8pt; color: var(--gray-400); }
+
+  /* ── Typography ── */
+  h1 { font-size: 18pt; font-weight: 700; color: var(--gray-800); margin-bottom: 14px; }
+  h2 { font-size: 13pt; font-weight: 600; color: var(--gray-800); margin: 20px 0 10px; }
+  h3 { font-size: 10.5pt; font-weight: 600; color: var(--primary); margin: 14px 0 8px; }
+  p { margin-bottom: 8px; color: var(--gray-600); }
+
+  /* ── KPI Cards ── */
+  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 14px 0; }
+  .kpi-card { background: var(--gray-100); border-radius: 8px; padding: 14px 12px; text-align: center; }
+  .kpi-value { font-size: 20pt; font-weight: 700; color: var(--primary); line-height: 1; margin-bottom: 4px; }
+  .kpi-label { font-size: 8.5pt; color: var(--gray-400); font-weight: 500; }
+  .kpi-sub { font-size: 8pt; color: var(--gray-400); margin-top: 2px; }
+
+  /* ── Tables ── */
+  table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 9pt; }
+  th { background: var(--primary); color: white; padding: 7px 10px; text-align: left; font-weight: 600; font-size: 8.5pt; }
+  td { padding: 6px 10px; border-bottom: 1px solid var(--gray-200); vertical-align: top; }
+  tr:nth-child(even) td { background: var(--gray-100); }
+  tr:last-child td { border-bottom: none; }
+  .td-url { font-size: 8pt; color: var(--gray-600); word-break: break-all; max-width: 200pt; }
+
+  /* ── Badges ── */
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 8pt; font-weight: 600; }
+  .badge-p1 { background: #fee2e2; color: var(--red); }
+  .badge-p2 { background: #ffedd5; color: var(--orange); }
+  .badge-p3 { background: #d1fae5; color: var(--green); }
+  .badge-pass { background: #d1fae5; color: var(--green); }
+  .badge-warn { background: #ffedd5; color: var(--orange); }
+  .badge-fail { background: #fee2e2; color: var(--red); }
+  .badge-good { background: #d1fae5; color: var(--green); }
+  .badge-needs { background: #ffedd5; color: var(--orange); }
+  .badge-poor { background: #fee2e2; color: var(--red); }
+  .badge-s { background: #e0e7ff; color: #4f46e5; }
+  .badge-m { background: #fef3c7; color: #d97706; }
+  .badge-l { background: #fce7f3; color: #be185d; }
+
+  /* ── Issue Cards ── */
+  .issue-card {
+    background: white;
+    border: 1px solid var(--gray-200);
+    border-left: 4px solid var(--primary);
+    border-radius: 0 8px 8px 0;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    page-break-inside: avoid;
+  }
+  .issue-card.p1 { border-left-color: var(--red); }
+  .issue-card.p2 { border-left-color: var(--orange); }
+  .issue-card.p3 { border-left-color: var(--green); }
+  .issue-title { font-size: 10pt; font-weight: 600; margin-bottom: 4px; }
+  .issue-meta { display: flex; gap: 6px; margin-bottom: 6px; align-items: center; }
+  .issue-row { font-size: 9pt; color: var(--gray-600); margin-bottom: 3px; }
+  .issue-row strong { color: var(--gray-800); font-weight: 600; }
+  .issue-fix { font-size: 9pt; color: #1d4ed8; margin-top: 4px; }
+  .issue-bench { font-size: 8pt; color: var(--gray-400); margin-top: 3px; font-style: italic; }
+  .issue-num { font-size: 9pt; font-weight: 700; color: var(--gray-400); margin-right: 6px; min-width: 20px; }
+
+  /* ── Section Intro ── */
+  .section-intro {
+    background: var(--gray-100); border-radius: 8px;
+    padding: 12px 16px; margin-bottom: 16px;
+    font-size: 9.5pt; color: var(--gray-600);
+  }
+
+  /* ── Score Ring ── */
+  .score-ring { display: inline-flex; flex-direction: column; align-items: center; gap: 4px; }
+  .score-num { font-size: 22pt; font-weight: 700; color: var(--primary); }
+  .score-label { font-size: 8pt; color: var(--gray-400); font-weight: 500; }
+
+  /* ── Charts ── */
+  .chart-img { width: 100%; height: auto; margin: 10px 0; }
+  .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 10px 0; }
+
+  /* ── Two Columns ── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+  /* ── AI Text ── */
+  .ai-text { font-size: 9.5pt; line-height: 1.65; color: var(--gray-700); white-space: pre-wrap; word-wrap: break-word; }
+
+  /* ── Progress Bar ── */
+  .progress-bar-bg { background: var(--gray-200); border-radius: 4px; height: 8px; overflow: hidden; width: 100%; margin: 4px 0 12px; }
+  .progress-bar-fill { height: 100%; border-radius: 4px; background: var(--primary); }
+
+  /* ── Tag List ── */
+  .tag-list { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 12px; }
+  .tag { background: var(--gray-200); color: var(--gray-600); border-radius: 12px; padding: 2px 10px; font-size: 8.5pt; }
+
+  /* ── Separator ── */
+  .sep { border: none; border-top: 1px solid var(--gray-200); margin: 16px 0; }
+
+  /* ── Status Colors ── */
+  .status-ok { color: var(--green); font-weight: 600; }
+  .status-warn { color: var(--orange); font-weight: 600; }
+  .status-err { color: var(--red); font-weight: 600; }
+
+  /* ── Timing Cell Colors ── */
+  .timing-good { color: var(--green); font-weight: 600; }
+  .timing-needs { color: var(--orange); font-weight: 600; }
+  .timing-poor { color: var(--red); font-weight: 600; }
+</style>
 </head>
 <body>
-    <h1>GA4 SEO Analyse Report</h1>
-    <p>Datum: {{ data.date }}</p>
-    
-    <h2>Traffic Daten</h2>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SEITE 1: DECKBLATT
+═══════════════════════════════════════════════════════════ -->
+<div class="page">
+  <div class="cover">
+    <div class="cover-tag">GeoBoost Analyse</div>
+    <div class="cover-title">GA4 &amp; SEO<br>Analyse-Report</div>
+    <div class="cover-subtitle">{{ kickoff.website_url }}</div>
+    <div class="cover-meta">
+      <div class="cover-meta-row">
+        <span class="cover-meta-label">Projekt</span>
+        <span class="cover-meta-value">{{ kickoff.project_name }}</span>
+      </div>
+      <div class="cover-meta-row">
+        <span class="cover-meta-label">Analysezeitraum</span>
+        <span class="cover-meta-value">{{ period_label }}</span>
+      </div>
+      <div class="cover-meta-row">
+        <span class="cover-meta-label">Erstellt am</span>
+        <span class="cover-meta-value">{{ date }}</span>
+      </div>
+      <div class="cover-meta-row">
+        <span class="cover-meta-label">Analyse-ID</span>
+        <span class="cover-meta-value">#{{ analysis_id }}</span>
+      </div>
+    </div>
+    <div class="cover-footer">Vertraulich – nur für internen Gebrauch bestimmt · GeoBoost v1.0</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SEITE 2: EXECUTIVE SUMMARY
+═══════════════════════════════════════════════════════════ -->
+<div class="page">
+  <div class="page-header">
+    <span class="brand">GeoBoost</span>
+    <span class="page-title">Executive Summary</span>
+  </div>
+  <h1>Executive Summary</h1>
+
+  {% set crawler = results.get('crawler', {}) %}
+  {% set ps = results.get('pagespeed', {}) %}
+  {% set ga4 = results.get('ga4_traffic', {}) %}
+  {% set channels = results.get('ga4_channels', []) %}
+  {% set devices = results.get('ga4_devices', []) %}
+  {% set speedtest = results.get('speedtest', {}) %}
+  {% set ai = results.get('ai_analysis', {}) %}
+  {% set mob = ps.get('mobile', {}) if ps else {} %}
+
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-value">{{ ga4.get('sessions', 0) | fmt_num }}</div>
+      <div class="kpi-label">Sessions</div>
+    </div>
+    <div class="kpi-card">
+      {% set mob_score = mob.get('performance_score') %}
+      <div class="kpi-value" style="color: {% if mob_score and mob_score >= 90 %}var(--green){% elif mob_score and mob_score >= 50 %}var(--orange){% else %}var(--red){% endif %}">
+        {{ mob_score or '–' }}
+      </div>
+      <div class="kpi-label">PageSpeed Mobile</div>
+      {% if mob_score %}<div class="kpi-sub">/ 100</div>{% endif %}
+    </div>
+    <div class="kpi-card">
+      {% set seo_score = crawler.get('summary', {}).get('seo_score', 0) %}
+      <div class="kpi-value" style="color: {% if seo_score >= 80 %}var(--green){% elif seo_score >= 60 %}var(--orange){% else %}var(--red){% endif %}">
+        {{ seo_score or '–' }}
+      </div>
+      <div class="kpi-label">SEO Score (Crawl)</div>
+    </div>
+    <div class="kpi-card">
+      {% set ttfb = speedtest.get('summary', {}).get('avg_ttfb_ms') %}
+      <div class="kpi-value" style="color: {% if ttfb and ttfb <= 200 %}var(--green){% elif ttfb and ttfb <= 600 %}var(--orange){% elif ttfb %}var(--red){% endif %}">
+        {{ (ttfb | int)|string + ' ms' if ttfb else '–' }}
+      </div>
+      <div class="kpi-label">Ø TTFB</div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div>
+      <h2>Stärken</h2>
+      {% if channels %}
+        {% set top_ch = channels | sort(attribute='sessions', reverse=True) | first %}
+        <div class="section-intro">
+          <strong>{{ top_ch.channel }}</strong> ist der stärkste Traffic-Kanal mit {{ top_ch.sessions | fmt_num }} Sessions.
+          {% if ga4.get('sessions', 0) > 0 and ga4.get('conversions', 0) > 0 %}
+          Gesamt-Conversion-Rate: {{ ((ga4.conversions / ga4.sessions * 100)) | fmt_pct }}.
+          {% endif %}
+          {% if crawler.get('summary', {}).get('pages_with_structured_data', 0) > 0 %}
+          {{ crawler.summary.pages_with_structured_data }} Seiten mit strukturierten Daten (Schema.org).
+          {% endif %}
+        </div>
+      {% else %}
+        <div class="section-intro">GA4-Kanaldaten nach Verbindung der API verfügbar.</div>
+      {% endif %}
+    </div>
+    <div>
+      <h2>Handlungsbedarf</h2>
+      <div class="section-intro">
+        {% if crawler.get('summary', {}).get('pages_error', 0) > 0 %}
+        <strong>{{ crawler.summary.pages_error }}</strong> Fehlerseiten (4xx/5xx).<br>
+        {% endif %}
+        {% if crawler.get('summary', {}).get('missing_titles', 0) > 0 %}
+        <strong>{{ crawler.summary.missing_titles }}</strong> Seiten ohne Title-Tag.<br>
+        {% endif %}
+        {% set mob_score = mob.get('performance_score') %}
+        {% if mob_score and mob_score < 50 %}
+        Mobile PageSpeed-Score <strong>kritisch</strong> ({{ mob_score }}/100).<br>
+        {% endif %}
+        {% set ttfb = speedtest.get('summary', {}).get('avg_ttfb_ms') %}
+        {% if ttfb and ttfb > 600 %}
+        TTFB überschreitet Schwellenwert ({{ ttfb | int }} ms).<br>
+        {% endif %}
+        {% if ps.get('mobile', {}).get('failed_audits', []) | length > 0 %}
+        <strong>{{ ps.mobile.failed_audits | length }}</strong> PageSpeed-Probleme gefunden.
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <h2>Ziele &amp; Ausgangslage</h2>
+  <table>
+    <tr><th>Feld</th><th>Wert</th></tr>
+    <tr><td>Website</td><td>{{ kickoff.website_url }}</td></tr>
+    <tr><td>Primäres Ziel</td><td>{{ kickoff.primary_goal or '–' }}</td></tr>
+    <tr><td>Wichtigste Aktion</td><td>{{ kickoff.main_action or '–' }}</td></tr>
+    <tr><td>Zielgruppe</td><td>{{ kickoff.target_audience or '–' }}</td></tr>
+    <tr><td>Analysezeitraum</td><td>{{ period_label }}</td></tr>
+    <tr><td>GA4 Property</td><td>{{ kickoff.ga4_property_id or '–' }}</td></tr>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SEITE 3: GA4 TRAFFIC & CONVERSIONS
+═══════════════════════════════════════════════════════════ -->
+<div class="page">
+  <div class="page-header">
+    <span class="brand">GeoBoost</span>
+    <span class="page-title">Traffic &amp; Conversions</span>
+  </div>
+  <h1>Traffic &amp; Conversions</h1>
+
+  {% set channels = results.get('ga4_channels', []) %}
+  {% set devices = results.get('ga4_devices', []) %}
+
+  {% if channels %}
+    {% if charts.get('channels') %}
+      <img class="chart-img" src="{{ charts.channels }}" alt="Traffic nach Kanal">
+    {% endif %}
+
+    <h2>Kanal-Analyse</h2>
     <table>
-        <tr><th>Channel</th><th>Sessions</th><th>Conversions</th></tr>
-        {% for item in data.traffic %}
-        <tr><td>{{ item.channel }}</td><td>{{ item.sessions }}</td><td>{{ item.conversions }}</td></tr>
-        {% endfor %}
+      <tr>
+        <th>Kanal</th><th>Sessions</th><th>Users</th><th>Conversions</th><th>Conv.-Rate</th><th>Bounce Rate</th>
+      </tr>
+      {% for ch in channels %}
+      <tr>
+        <td><strong>{{ ch.channel }}</strong></td>
+        <td>{{ ch.sessions | fmt_num }}</td>
+        <td>{{ ch.get('users', 0) | fmt_num }}</td>
+        <td>{{ ch.conversions | fmt_num }}</td>
+        <td>{{ ch.conversion_rate | fmt_pct }}</td>
+        <td>{{ ch.get('bounce_rate', 0) | fmt_pct }}</td>
+      </tr>
+      {% endfor %}
     </table>
-    
-    <h2>Analyse</h2>
-    <p>{{ data.analysis }}</p>
+  {% else %}
+    <div class="section-intro">GA4 Kanaldaten nicht verfügbar – bitte Google Service Account in den Einstellungen hinterlegen.</div>
+  {% endif %}
+
+  {% if devices %}
+  <div class="two-col" style="margin-top: 16px;">
+    <div>
+      <h2>Gerätekategorien</h2>
+      <table>
+        <tr><th>Gerät</th><th>Sessions</th><th>Conv.-Rate</th></tr>
+        {% for d in devices %}
+        <tr>
+          <td>{{ d.device }}</td>
+          <td>{{ d.sessions | fmt_num }}</td>
+          <td>{{ d.conversion_rate | fmt_pct }}</td>
+        </tr>
+        {% endfor %}
+      </table>
+    </div>
+    <div>
+      {% if charts.get('devices') %}
+        <img src="{{ charts.devices }}" alt="Gerätekategorien" style="width:100%; margin-top: 28px;">
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SEITE 4: PAGESPEED INSIGHTS
+═══════════════════════════════════════════════════════════ -->
+<div class="page">
+  <div class="page-header">
+    <span class="brand">GeoBoost</span>
+    <span class="page-title">PageSpeed Insights</span>
+  </div>
+  <h1>PageSpeed &amp; Core Web Vitals</h1>
+
+  {% set ps = results.get('pagespeed', {}) %}
+  {% set mob = ps.get('mobile', {}) if ps else {} %}
+  {% set desk = ps.get('desktop', {}) if ps else {} %}
+
+  {% if ps and (mob or desk) %}
+
+  {% if charts.get('pagespeed') %}
+    <img class="chart-img" src="{{ charts.pagespeed }}" alt="PageSpeed Scores" style="max-height: 120px;">
+  {% endif %}
+
+  <!-- Score Overview -->
+  <div class="kpi-grid" style="grid-template-columns: repeat(4, 1fr);">
+    {% for label, key in [('Performance', 'performance_score'), ('SEO', 'seo_score'), ('Accessibility', 'accessibility_score'), ('Best Practices', 'best_practices_score')] %}
+    {% set ms = mob.get(key) %}
+    {% set ds = desk.get(key) %}
+    <div class="kpi-card">
+      <div style="display: flex; justify-content: center; gap: 12px;">
+        <div>
+          <div style="font-size: 16pt; font-weight: 700; color: {% if ms and ms >= 90 %}var(--green){% elif ms and ms >= 50 %}var(--orange){% else %}var(--red){% endif %}">{{ ms or '–' }}</div>
+          <div style="font-size: 7.5pt; color: var(--gray-400);">Mobile</div>
+        </div>
+        <div>
+          <div style="font-size: 16pt; font-weight: 700; color: {% if ds and ds >= 90 %}var(--green){% elif ds and ds >= 50 %}var(--orange){% else %}var(--red){% endif %}">{{ ds or '–' }}</div>
+          <div style="font-size: 7.5pt; color: var(--gray-400);">Desktop</div>
+        </div>
+      </div>
+      <div class="kpi-label" style="margin-top: 6px;">{{ label }}</div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Core Web Vitals -->
+  <h2>Core Web Vitals</h2>
+  <table>
+    <tr>
+      <th>Metrik</th><th>Mobile Wert</th><th>Mobile Rating</th><th>Desktop Wert</th><th>Desktop Rating</th><th>Zielwert</th>
+    </tr>
+    <tr>
+      <td><strong>LCP</strong> (Largest Contentful Paint)</td>
+      <td>{{ mob.get('lcp') or '–' }}</td>
+      <td><span class="badge badge-{{ mob.get('lcp_rating', 'n/a') | replace('good', 'good') | replace('needs_improvement', 'needs') | replace('poor', 'poor') | replace('n/a', 'warn') }}">{{ mob.get('lcp_rating', '–') }}</span></td>
+      <td>{{ desk.get('lcp') or '–' }}</td>
+      <td><span class="badge badge-{{ desk.get('lcp_rating', 'n/a') | replace('good', 'good') | replace('needs_improvement', 'needs') | replace('poor', 'poor') | replace('n/a', 'warn') }}">{{ desk.get('lcp_rating', '–') }}</span></td>
+      <td style="color: var(--green);">≤ 2.5 s</td>
+    </tr>
+    <tr>
+      <td><strong>CLS</strong> (Cumulative Layout Shift)</td>
+      <td>{{ mob.get('cls') or '–' }}</td>
+      <td><span class="badge badge-{{ mob.get('cls_rating', 'n/a') | replace('good', 'good') | replace('needs_improvement', 'needs') | replace('poor', 'poor') | replace('n/a', 'warn') }}">{{ mob.get('cls_rating', '–') }}</span></td>
+      <td>{{ desk.get('cls') or '–' }}</td>
+      <td><span class="badge badge-{{ desk.get('cls_rating', 'n/a') | replace('good', 'good') | replace('needs_improvement', 'needs') | replace('poor', 'poor') | replace('n/a', 'warn') }}">{{ desk.get('cls_rating', '–') }}</span></td>
+      <td style="color: var(--green);">≤ 0.1</td>
+    </tr>
+    <tr>
+      <td><strong>TBT</strong> (Total Blocking Time)</td>
+      <td>{{ mob.get('tbt') or '–' }}</td>
+      <td><span class="badge badge-{{ mob.get('tbt_rating', 'n/a') | replace('good', 'good') | replace('needs_improvement', 'needs') | replace('poor', 'poor') | replace('n/a', 'warn') }}">{{ mob.get('tbt_rating', '–') }}</span></td>
+      <td>{{ desk.get('tbt') or '–' }}</td>
+      <td><span class="badge badge-{{ desk.get('tbt_rating', 'n/a') | replace('good', 'good') | replace('needs_improvement', 'needs') | replace('poor', 'poor') | replace('n/a', 'warn') }}">{{ desk.get('tbt_rating', '–') }}</span></td>
+      <td style="color: var(--green);">≤ 200 ms</td>
+    </tr>
+    <tr>
+      <td><strong>FCP</strong> (First Contentful Paint)</td>
+      <td>{{ mob.get('fcp') or '–' }}</td>
+      <td><span class="badge badge-{{ mob.get('fcp_rating', 'n/a') | replace('good', 'good') | replace('needs_improvement', 'needs') | replace('poor', 'poor') | replace('n/a', 'warn') }}">{{ mob.get('fcp_rating', '–') }}</span></td>
+      <td>{{ desk.get('fcp') or '–' }}</td>
+      <td></td>
+      <td style="color: var(--green);">≤ 1.8 s</td>
+    </tr>
+    <tr>
+      <td>TTI (Time to Interactive)</td>
+      <td>{{ mob.get('tti') or '–' }}</td><td></td>
+      <td>{{ desk.get('tti') or '–' }}</td><td></td>
+      <td style="color: var(--green);">≤ 3.8 s</td>
+    </tr>
+  </table>
+
+  <!-- Opportunities -->
+  {% set opps = mob.get('opportunities', []) %}
+  {% if opps %}
+  <h2>Performance-Einsparpotenziale (Mobile)</h2>
+  <table>
+    <tr><th>#</th><th>Massnahme</th><th>Einsparung Zeit</th><th>Einsparung Grösse</th></tr>
+    {% for opp in opps[:8] %}
+    <tr>
+      <td style="color: var(--gray-400); font-weight: 600;">{{ loop.index }}</td>
+      <td><strong>{{ opp.title }}</strong><br>
+        <span style="font-size: 8pt; color: var(--gray-400);">{{ opp.display_value }}</span>
+      </td>
+      <td class="{% if opp.savings_ms %}timing-poor{% endif %}">{{ (opp.savings_ms|string + ' ms') if opp.savings_ms else '–' }}</td>
+      <td>{{ (opp.savings_kb|string + ' KB') if opp.savings_kb else '–' }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% endif %}
+
+  {% else %}
+  <div class="section-intro">PageSpeed-Daten nicht verfügbar.</div>
+  {% endif %}
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SEITE 5: PAGESPEED PROBLEME (DETAILLIERT)
+═══════════════════════════════════════════════════════════ -->
+{% set failed_audits = mob.get('failed_audits', []) %}
+{% if failed_audits %}
+<div class="page">
+  <div class="page-header">
+    <span class="brand">GeoBoost</span>
+    <span class="page-title">Lighthouse Audit-Befunde</span>
+  </div>
+  <h1>Lighthouse-Befunde – Mobile ({{ failed_audits | length }} Probleme)</h1>
+
+  <div class="section-intro">
+    Alle nicht bestandenen Lighthouse-Audits sortiert nach Schwere und Einsparpotenzial.
+    Rating: <span class="badge badge-fail">fail</span> = Score &lt; 50 · <span class="badge badge-warn">warn</span> = Score 50–89
+  </div>
+
+  {% for audit in failed_audits %}
+  <div class="issue-card {{ 'p1' if audit.rating == 'fail' else 'p2' }}" style="page-break-inside: avoid;">
+    <div class="issue-meta">
+      <span class="issue-num">{{ loop.index }}.</span>
+      <span class="badge badge-{{ audit.rating }}">{{ audit.rating | upper }}</span>
+      <span class="badge" style="background: var(--gray-200); color: var(--gray-600);">{{ audit.category }}</span>
+      {% if audit.savings_ms %}<span class="badge badge-p1">–{{ audit.savings_ms }} ms</span>{% endif %}
+      {% if audit.score is not none %}<span class="badge" style="background: var(--gray-200); color: var(--gray-600);">Score: {{ audit.score }}/100</span>{% endif %}
+    </div>
+    <div class="issue-title">{{ audit.title }}</div>
+    {% if audit.display_value %}
+    <div class="issue-row"><strong>Messwert:</strong> {{ audit.display_value }}</div>
+    {% endif %}
+    {% if audit.explanation_de %}
+    <div class="issue-row">{{ audit.explanation_de }}</div>
+    {% elif audit.description %}
+    <div class="issue-row" style="font-size: 8.5pt;">{{ audit.description[:250] }}</div>
+    {% endif %}
+    <div style="font-size: 8pt; color: var(--gray-400); margin-top: 3px; font-family: monospace;">ID: {{ audit.id }}</div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- ═══════════════════════════════════════════════════════════
+     SEITE 6: SPEED TEST
+═══════════════════════════════════════════════════════════ -->
+{% set speedtest = results.get('speedtest', {}) %}
+{% if speedtest and speedtest.get('pages') %}
+<div class="page">
+  <div class="page-header">
+    <span class="brand">GeoBoost</span>
+    <span class="page-title">HTTP Speed-Test</span>
+  </div>
+  <h1>HTTP Speed-Test – Ladezeiten-Analyse</h1>
+
+  {% set st_sum = speedtest.get('summary', {}) %}
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      {% set ttfb_r = st_sum.get('avg_ttfb_rating', '') %}
+      <div class="kpi-value" style="color: {% if ttfb_r == 'good' %}var(--green){% elif ttfb_r == 'needs_work' %}var(--orange){% else %}var(--red){% endif %}">
+        {{ (st_sum.get('avg_ttfb_ms') | int)|string + ' ms' if st_sum.get('avg_ttfb_ms') else '–' }}
+      </div>
+      <div class="kpi-label">Ø TTFB</div>
+      <div class="kpi-sub">Gut: &lt;200 ms</div>
+    </div>
+    <div class="kpi-card">
+      {% set tot_r = st_sum.get('avg_total_rating', '') %}
+      <div class="kpi-value" style="color: {% if tot_r == 'good' %}var(--green){% elif tot_r == 'needs_work' %}var(--orange){% else %}var(--red){% endif %}">
+        {{ (st_sum.get('avg_total_ms') | int)|string + ' ms' if st_sum.get('avg_total_ms') else '–' }}
+      </div>
+      <div class="kpi-label">Ø Gesamtladezeit</div>
+      <div class="kpi-sub">Gut: &lt;1500 ms</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-value">{{ st_sum.get('pages_tested', 0) }}</div>
+      <div class="kpi-label">Seiten getestet</div>
+      <div class="kpi-sub">3 Messungen / Median</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-value" style="color: var(--red);">{{ (st_sum.get('slowest_ms') | int)|string + ' ms' if st_sum.get('slowest_ms') else '–' }}</div>
+      <div class="kpi-label">Langsamste Seite</div>
+    </div>
+  </div>
+
+  <!-- Waterfall Chart -->
+  {% if charts.get('speedtest') %}
+    <img class="chart-img" src="{{ charts.speedtest }}" alt="Speed-Test Waterfall">
+  {% endif %}
+
+  <!-- Per-page timing table -->
+  <h2>Messwerte pro Seite</h2>
+  <table>
+    <tr>
+      <th>URL</th><th>DNS</th><th>TCP</th><th>TLS</th><th>TTFB</th><th>Transfer</th><th>Total</th><th>Komprimierung</th><th>HTTP/2</th>
+    </tr>
+    {% for page in speedtest.get('pages', []) %}
+    {% if not page.get('error') %}
+    <tr>
+      <td class="td-url">{{ page.url | replace('https://', '') | replace('http://', '') | truncate(45) }}</td>
+      <td>{{ (page.dns_ms|string + ' ms') if page.get('dns_ms') else '–' }}</td>
+      <td>{{ (page.connect_ms|string + ' ms') if page.get('connect_ms') else '–' }}</td>
+      <td>{{ (page.tls_ms|string + ' ms') if page.get('tls_ms') else '–' }}</td>
+      <td class="{% if page.get('ttfb_rating') == 'good' %}timing-good{% elif page.get('ttfb_rating') == 'needs_work' %}timing-needs{% else %}timing-poor{% endif %}">
+        {{ (page.ttfb_ms|string + ' ms') if page.get('ttfb_ms') else '–' }}
+      </td>
+      <td>{{ (page.transfer_ms|string + ' ms') if page.get('transfer_ms') else '–' }}</td>
+      <td class="{% if page.get('total_rating') == 'good' %}timing-good{% elif page.get('total_rating') == 'needs_work' %}timing-needs{% else %}timing-poor{% endif %}">
+        <strong>{{ (page.total_ms|string + ' ms') if page.get('total_ms') else '–' }}</strong>
+      </td>
+      <td>{% if page.get('content_encoding') %}<span class="status-ok">{{ page.content_encoding }}</span>{% else %}<span class="status-err">Nein</span>{% endif %}</td>
+      <td>{% if page.get('http2') %}<span class="status-ok">Ja</span>{% else %}<span class="status-warn">Nein</span>{% endif %}</td>
+    </tr>
+    {% endif %}
+    {% endfor %}
+  </table>
+
+  <!-- Benchmarks -->
+  <h2>Benchmark-Referenz</h2>
+  <table>
+    <tr><th>Metrik</th><th>Gut (grün)</th><th>Akzeptabel (orange)</th><th>Kritisch (rot)</th></tr>
+    <tr><td>TTFB</td><td class="timing-good">&lt; 200 ms</td><td class="timing-needs">200–600 ms</td><td class="timing-poor">&gt; 600 ms</td></tr>
+    <tr><td>Gesamtladezeit</td><td class="timing-good">&lt; 1.5 s</td><td class="timing-needs">1.5–3 s</td><td class="timing-poor">&gt; 3 s</td></tr>
+    <tr><td>DNS-Lookup</td><td class="timing-good">&lt; 50 ms</td><td class="timing-needs">50–150 ms</td><td class="timing-poor">&gt; 150 ms</td></tr>
+    <tr><td>TCP-Verbindung</td><td class="timing-good">&lt; 100 ms</td><td class="timing-needs">100–300 ms</td><td class="timing-poor">&gt; 300 ms</td></tr>
+    <tr><td>TLS-Handshake</td><td class="timing-good">&lt; 150 ms</td><td class="timing-needs">150–400 ms</td><td class="timing-poor">&gt; 400 ms</td></tr>
+    <tr><td>Content-Transfer</td><td class="timing-good">&lt; 500 ms</td><td class="timing-needs">500 ms–2 s</td><td class="timing-poor">&gt; 2 s</td></tr>
+  </table>
+
+  <!-- Speed Issues -->
+  {% set sp_issues = speedtest.get('issues', []) %}
+  {% if sp_issues %}
+  <h2>Gefundene Speed-Probleme ({{ sp_issues | length }})</h2>
+  {% for iss in sp_issues %}
+  <div class="issue-card {{ 'p1' if iss.priority == 'P1' else 'p2' if iss.priority == 'P2' else 'p3' }}">
+    <div class="issue-meta">
+      <span class="badge badge-{{ 'p1' if iss.priority == 'P1' else 'p2' if iss.priority == 'P2' else 'p3' }}">{{ iss.priority }}</span>
+      <span class="badge badge-{{ 's' if iss.effort == 'S' else 'm' if iss.effort == 'M' else 'l' }}">Aufwand {{ iss.effort }}</span>
+    </div>
+    <div class="issue-title">{{ iss.title }}</div>
+    <div class="issue-row">{{ iss.explanation }}</div>
+    <div class="issue-fix"><strong>Fix:</strong> {{ iss.fix }}</div>
+    <div class="issue-bench">{{ iss.benchmark }}</div>
+  </div>
+  {% endfor %}
+  {% endif %}
+</div>
+{% endif %}
+
+<!-- ═══════════════════════════════════════════════════════════
+     SEITE 7: CRAWL-ERGEBNISSE
+═══════════════════════════════════════════════════════════ -->
+{% set crawler = results.get('crawler', {}) %}
+{% set cs = crawler.get('summary', {}) %}
+{% set ci = crawler.get('issues', {}) %}
+{% if cs %}
+<div class="page">
+  <div class="page-header">
+    <span class="brand">GeoBoost</span>
+    <span class="page-title">Website-Crawl</span>
+  </div>
+  <h1>Website-Crawl – SEO-Audit</h1>
+
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-value">{{ cs.total_pages }}</div>
+      <div class="kpi-label">Seiten gecrawlt</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-value" style="color: {% if cs.pages_error > 0 %}var(--red){% else %}var(--green){% endif %}">{{ cs.pages_error }}</div>
+      <div class="kpi-label">Fehler (4xx/5xx)</div>
+    </div>
+    <div class="kpi-card">
+      {% set seo_s = cs.seo_score %}
+      <div class="kpi-value" style="color: {% if seo_s >= 80 %}var(--green){% elif seo_s >= 60 %}var(--orange){% else %}var(--red){% endif %}">{{ seo_s }}</div>
+      <div class="kpi-label">SEO Score</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-value" style="color: {% if cs.avg_response_ms and cs.avg_response_ms > 1000 %}var(--red){% elif cs.avg_response_ms and cs.avg_response_ms > 500 %}var(--orange){% else %}var(--green){% endif %}">
+        {{ (cs.avg_response_ms|int|string + ' ms') if cs.get('avg_response_ms') else '–' }}
+      </div>
+      <div class="kpi-label">Ø Response-Zeit</div>
+    </div>
+  </div>
+
+  <!-- SEO Check Summary -->
+  <h2>SEO-Checks Übersicht</h2>
+  <table>
+    <tr><th>SEO-Check</th><th>Anzahl Probleme</th><th>Bewertung</th></tr>
+    <tr>
+      <td>Fehlende Title-Tags</td>
+      <td>{{ cs.missing_titles }}</td>
+      <td><span class="badge {% if cs.missing_titles == 0 %}badge-pass{% elif cs.missing_titles < 5 %}badge-warn{% else %}badge-fail{% endif %}">{% if cs.missing_titles == 0 %}OK{% elif cs.missing_titles < 5 %}Prüfen{% else %}Kritisch{% endif %}</span></td>
+    </tr>
+    <tr>
+      <td>Fehlende Meta-Descriptions</td>
+      <td>{{ cs.missing_meta }}</td>
+      <td><span class="badge {% if cs.missing_meta == 0 %}badge-pass{% elif cs.missing_meta < 5 %}badge-warn{% else %}badge-fail{% endif %}">{% if cs.missing_meta == 0 %}OK{% elif cs.missing_meta < 5 %}Prüfen{% else %}Kritisch{% endif %}</span></td>
+    </tr>
+    <tr>
+      <td>Seiten ohne H1-Tag</td>
+      <td>{{ cs.no_h1_pages }}</td>
+      <td><span class="badge {% if cs.no_h1_pages == 0 %}badge-pass{% elif cs.no_h1_pages < 3 %}badge-warn{% else %}badge-fail{% endif %}">{% if cs.no_h1_pages == 0 %}OK{% elif cs.no_h1_pages < 3 %}Prüfen{% else %}Kritisch{% endif %}</span></td>
+    </tr>
+    <tr>
+      <td>Seiten mit mehreren H1</td>
+      <td>{{ cs.multiple_h1_pages }}</td>
+      <td><span class="badge {% if cs.multiple_h1_pages == 0 %}badge-pass{% else %}badge-warn{% endif %}">{% if cs.multiple_h1_pages == 0 %}OK{% else %}Prüfen{% endif %}</span></td>
+    </tr>
+    <tr>
+      <td>Bilder ohne Alt-Text</td>
+      <td>{{ cs.images_without_alt }}</td>
+      <td><span class="badge {% if cs.images_without_alt == 0 %}badge-pass{% elif cs.images_without_alt < 10 %}badge-warn{% else %}badge-fail{% endif %}">{% if cs.images_without_alt == 0 %}OK{% elif cs.images_without_alt < 10 %}Prüfen{% else %}Kritisch{% endif %}</span></td>
+    </tr>
+    <tr>
+      <td>Doppelte Title-Tags</td>
+      <td>{{ cs.duplicate_titles }}</td>
+      <td><span class="badge {% if cs.duplicate_titles == 0 %}badge-pass{% else %}badge-warn{% endif %}">{% if cs.duplicate_titles == 0 %}OK{% else %}Prüfen{% endif %}</span></td>
+    </tr>
+    <tr>
+      <td>Seiten mit noindex</td>
+      <td>{{ cs.get('noindex_pages', 0) }}</td>
+      <td><span class="badge {% if cs.get('noindex_pages', 0) == 0 %}badge-pass{% else %}badge-warn{% endif %}">{% if cs.get('noindex_pages', 0) == 0 %}OK{% else %}Prüfen{% endif %}</span></td>
+    </tr>
+    <tr>
+      <td>Canonical-Probleme</td>
+      <td>{{ cs.get('canonical_issues', 0) }}</td>
+      <td><span class="badge {% if cs.get('canonical_issues', 0) == 0 %}badge-pass{% else %}badge-warn{% endif %}">{% if cs.get('canonical_issues', 0) == 0 %}OK{% else %}Prüfen{% endif %}</span></td>
+    </tr>
+    <tr>
+      <td>Seiten mit strukturierten Daten</td>
+      <td>{{ cs.get('pages_with_structured_data', 0) }} / {{ cs.total_pages }}</td>
+      <td><span class="badge {% if cs.get('pages_with_structured_data', 0) > 0 %}badge-pass{% else %}badge-warn{% endif %}">{% if cs.get('pages_with_structured_data', 0) > 0 %}Vorhanden{% else %}Prüfen{% endif %}</span></td>
+    </tr>
+    <tr>
+      <td>Langsame Seiten (&gt;1s Response)</td>
+      <td>{{ cs.get('slow_pages_count', 0) }}</td>
+      <td><span class="badge {% if cs.get('slow_pages_count', 0) == 0 %}badge-pass{% elif cs.get('slow_pages_count', 0) < 3 %}badge-warn{% else %}badge-fail{% endif %}">{% if cs.get('slow_pages_count', 0) == 0 %}OK{% elif cs.get('slow_pages_count', 0) < 3 %}Prüfen{% else %}Kritisch{% endif %}</span></td>
+    </tr>
+  </table>
+
+  <!-- Fehlerseiten mit URLs -->
+  {% if ci.get('error_pages') %}
+  <h2>Fehlerseiten ({{ ci.error_pages | length }})</h2>
+  {% for url in ci.error_pages[:15] %}
+  <div style="font-size: 8.5pt; color: var(--red); padding: 3px 0; word-break: break-all;">✗ {{ url }}</div>
+  {% endfor %}
+  {% if ci.error_pages | length > 15 %}<div style="font-size: 8pt; color: var(--gray-400);">+ {{ ci.error_pages | length - 15 }} weitere …</div>{% endif %}
+  {% endif %}
+
+  <!-- Missing Titles -->
+  {% if ci.get('missing_title') %}
+  <h2>Fehlende Title-Tags ({{ ci.missing_title | length }})</h2>
+  {% for url in ci.missing_title[:10] %}
+  <div style="font-size: 8.5pt; color: var(--orange); padding: 2px 0; word-break: break-all;">⚠ {{ url }}</div>
+  {% endfor %}
+  {% if ci.missing_title | length > 10 %}<div style="font-size: 8pt; color: var(--gray-400);">+ {{ ci.missing_title | length - 10 }} weitere …</div>{% endif %}
+  {% endif %}
+
+  <!-- Duplicate Titles -->
+  {% if ci.get('duplicate_titles') %}
+  <h2>Doppelte Title-Tags ({{ ci.duplicate_titles | length }})</h2>
+  {% for dup in ci.duplicate_titles[:6] %}
+  <div style="padding: 4px 0; border-bottom: 1px solid var(--gray-200);">
+    <div style="font-size: 8.5pt; font-weight: 600; color: var(--orange);">„{{ dup.title }}"</div>
+    {% for url in dup.urls[:3] %}
+    <div style="font-size: 8pt; color: var(--gray-600); padding-left: 10px; word-break: break-all;">→ {{ url }}</div>
+    {% endfor %}
+  </div>
+  {% endfor %}
+  {% endif %}
+
+  <!-- Slow Pages -->
+  {% if ci.get('slow_pages') %}
+  <h2>Langsame Seiten (&gt;1s Response-Zeit)</h2>
+  <table>
+    <tr><th>URL</th><th>Response-Zeit</th></tr>
+    {% for p in ci.slow_pages[:10] %}
+    <tr>
+      <td class="td-url">{{ p.url }}</td>
+      <td class="timing-poor">{{ p.response_time_ms }} ms</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% endif %}
+</div>
+{% endif %}
+
+<!-- ═══════════════════════════════════════════════════════════
+     SEITE 8+: KI-ANALYSE & MASSNAHMENKATALOG
+═══════════════════════════════════════════════════════════ -->
+<div class="page">
+  <div class="page-header">
+    <span class="brand">GeoBoost</span>
+    <span class="page-title">KI-Analyse &amp; Massnahmen</span>
+  </div>
+  <h1>KI-Analyse &amp; Massnahmenkatalog</h1>
+
+  {% set ai = results.get('ai_analysis', {}) %}
+  {% if ai.get('text') %}
+    <p style="font-size: 8.5pt; color: var(--gray-400); margin-bottom: 12px;">
+      Generiert mit Ollama ({{ ai.get('model', 'lokal') }}) – Empfehlungen vor Umsetzung prüfen.
+    </p>
+    <div class="ai-text">{{ ai.text }}</div>
+  {% else %}
+    <div class="section-intro">KI-Analyse nicht verfügbar. Bitte Ollama installieren und das Modell llama3.1:8b herunterladen.</div>
+  {% endif %}
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     LETZTE SEITE: NÄCHSTE SCHRITTE & ANHANG
+═══════════════════════════════════════════════════════════ -->
+<div class="page">
+  <div class="page-header">
+    <span class="brand">GeoBoost</span>
+    <span class="page-title">Nächste Schritte</span>
+  </div>
+  <h1>Empfohlenes Vorgehen</h1>
+
+  <div class="section-intro">
+    Priorisierung basierend auf Wirkung (P1 = kritisch, P3 = nice-to-have) und Aufwand (S = Stunden, M = Tage, L = Wochen).
+  </div>
+
+  <!-- Generate top issues from actual data -->
+  {% set mob = results.get('pagespeed', {}).get('mobile', {}) %}
+  {% set cs = results.get('crawler', {}).get('summary', {}) %}
+  {% set ci = results.get('crawler', {}).get('issues', {}) %}
+  {% set sp_issues = results.get('speedtest', {}).get('issues', []) %}
+  {% set ps_fails = mob.get('failed_audits', []) %}
+
+  <h2>Sofortmassnahmen (diese Woche)</h2>
+
+  {% if ci.get('error_pages') %}
+  <div class="issue-card p1">
+    <div class="issue-meta"><span class="badge badge-p1">P1</span><span class="badge badge-s">S</span></div>
+    <div class="issue-title">{{ ci.error_pages | length }} Fehlerseiten korrigieren</div>
+    <div class="issue-row">Defekte Links schaden Crawlbarkeit und User Experience. Für jeden 404-Fehler eine 301-Weiterleitung einrichten.</div>
+  </div>
+  {% endif %}
+
+  {% set p1_sp = sp_issues | selectattr('priority', 'equalto', 'P1') | list %}
+  {% for iss in p1_sp[:2] %}
+  <div class="issue-card p1">
+    <div class="issue-meta"><span class="badge badge-p1">P1</span><span class="badge badge-{{ 's' if iss.effort == 'S' else 'm' }}">{{ iss.effort }}</span></div>
+    <div class="issue-title">{{ iss.title }}</div>
+    <div class="issue-fix">{{ iss.fix }}</div>
+  </div>
+  {% endfor %}
+
+  {% set p1_audits = ps_fails | selectattr('rating', 'equalto', 'fail') | list %}
+  {% for audit in p1_audits[:2] %}
+  <div class="issue-card p1">
+    <div class="issue-meta"><span class="badge badge-p1">P1</span><span class="badge badge-m">M</span></div>
+    <div class="issue-title">{{ audit.title }}</div>
+    {% if audit.explanation_de %}<div class="issue-row">{{ audit.explanation_de }}</div>{% endif %}
+  </div>
+  {% endfor %}
+
+  {% if not ci.get('error_pages') and not p1_sp and not p1_audits %}
+  <div class="issue-card p3">
+    <div class="issue-meta"><span class="badge badge-p3">P3</span></div>
+    <div class="issue-title">Keine kritischen P1-Probleme gefunden</div>
+    <div class="issue-row">Weiter zu den mittelfristigen Optimierungen.</div>
+  </div>
+  {% endif %}
+
+  <h2>Kurzfristig (nächste 2 Wochen)</h2>
+
+  {% set p2_sp = sp_issues | selectattr('priority', 'equalto', 'P2') | list %}
+  {% for iss in p2_sp[:2] %}
+  <div class="issue-card p2">
+    <div class="issue-meta"><span class="badge badge-p2">P2</span><span class="badge badge-{{ 's' if iss.effort == 'S' else 'm' }}">{{ iss.effort }}</span></div>
+    <div class="issue-title">{{ iss.title }}</div>
+    <div class="issue-fix">{{ iss.fix }}</div>
+  </div>
+  {% endfor %}
+
+  {% if cs.get('images_without_alt', 0) > 0 %}
+  <div class="issue-card p2">
+    <div class="issue-meta"><span class="badge badge-p2">P2</span><span class="badge badge-s">S</span></div>
+    <div class="issue-title">{{ cs.images_without_alt }} Bilder ohne Alt-Text</div>
+    <div class="issue-row">Alt-Texte verbessern SEO und Barrierefreiheit gleichzeitig. Für alle gefundenen Bilder beschreibende Alt-Texte ergänzen.</div>
+  </div>
+  {% endif %}
+
+  <h2>Mittelfristig (4–6 Wochen)</h2>
+  <div class="issue-card p3">
+    <div class="issue-meta"><span class="badge badge-p3">P3</span><span class="badge badge-l">L</span></div>
+    <div class="issue-title">Conversion-Rate-Optimierung &amp; Strukturierte Daten</div>
+    <div class="issue-row">Schwache Kanäle analysieren, Landing Pages optimieren, Schema.org für alle wichtigen Seiten implementieren.</div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>Analyse-Details</h2>
+  <table>
+    <tr><th>Parameter</th><th>Wert</th></tr>
+    <tr><td>Analyse-ID</td><td>#{{ analysis_id }}</td></tr>
+    <tr><td>Erstellt am</td><td>{{ date }}</td></tr>
+    <tr><td>Analysezeitraum</td><td>{{ period_label }}</td></tr>
+    <tr><td>Website</td><td>{{ kickoff.website_url }}</td></tr>
+    <tr><td>Seiten gecrawlt</td><td>{{ cs.get('total_pages', '–') }}</td></tr>
+    <tr><td>PageSpeed-Probleme gefunden</td><td>{{ ps_fails | length }}</td></tr>
+    <tr><td>Speed-Test Seiten</td><td>{{ results.get('speedtest', {}).get('summary', {}).get('pages_tested', '–') }}</td></tr>
+    <tr><td>Erstellt mit</td><td>GeoBoost v1.0</td></tr>
+  </table>
+
+  <p style="margin-top: 20px; font-size: 8.5pt; color: var(--gray-400);">
+    Dieser Report wurde automatisch von GeoBoost generiert. Alle Empfehlungen basieren auf den zum Zeitpunkt der Analyse verfügbaren Daten. Bitte prüfen Sie die Massnahmen vor der Umsetzung auf Ihre spezifische Situation.
+  </p>
+</div>
+
 </body>
 </html>

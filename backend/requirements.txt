@@ -1,13 +1,17 @@
-requests
-playwright
-google-api-python-client
-google-auth
-google-auth-oauthlib
-google-auth-httplib2
-ollama
-jinja2
-weasyprint
-chart.js (für Python? Nein, Chart.js ist JS, für PDF verwende matplotlib oder ähnlich)
-matplotlib
-pandas
-sqlite3 (built-in)
+fastapi>=0.111.0
+uvicorn[standard]>=0.29.0
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+lxml>=5.0.0
+google-analytics-data>=0.18.0
+google-api-python-client>=2.120.0
+google-auth>=2.28.0
+google-auth-oauthlib>=1.2.0
+google-auth-httplib2>=0.2.0
+ollama>=0.2.0
+jinja2>=3.1.3
+weasyprint>=62.0
+matplotlib>=3.8.0
+numpy>=1.26.0
+aiofiles>=23.2.1
+python-multipart>=0.0.9

@@ -1,54 +1,165 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import { invoke } from "@tauri-apps/api/tauri";
-import "./App.css";
+import { useState, useEffect } from "react";
+import "./styles.css";
+import { checkHealth } from "./api";
+import Dashboard from "./components/Dashboard";
+import Kickoff from "./components/Kickoff";
+import CheckSelector from "./components/CheckSelector";
+import AnalysisProgress from "./components/AnalysisProgress";
+import Settings from "./components/Settings";
+import type { KickoffData, CheckConfig } from "./api";
 
-function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
+type View = "dashboard" | "kickoff" | "checks" | "progress" | "settings";
 
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
-    setGreetMsg(await invoke("greet", { name }));
-  }
+interface WizardState {
+  kickoff?: KickoffData;
+  checks?: CheckConfig;
+  analysisId?: number;
+  projectId?: number;
+}
+
+const DEFAULT_CHECKS: CheckConfig = {
+  crawling: true,
+  pagespeed: true,
+  speedtest: true,
+  ga4_traffic: true,
+  ga4_channels: true,
+  ga4_landingpages: true,
+  ga4_devices: true,
+  search_console: false,
+  ai_analysis: true,
+  pdf_report: true,
+};
+
+export default function App() {
+  const [view, setView] = useState<View>("dashboard");
+  const [wizard, setWizard] = useState<WizardState>({});
+  const [backendOk, setBackendOk] = useState<boolean | null>(null);
+  // Don't show "offline" until we've waited long enough for Python to start
+  const [startupGrace, setStartupGrace] = useState(true);
+
+  useEffect(() => {
+    // Give Tauri 10 seconds to auto-start the backend before showing the error banner
+    const graceTimer = setTimeout(() => setStartupGrace(false), 10_000);
+
+    const check = () =>
+      checkHealth()
+        .then(() => { setBackendOk(true); setStartupGrace(false); })
+        .catch(() => setBackendOk(false));
+
+    check();
+    const interval = setInterval(check, 3000);
+    return () => { clearInterval(interval); clearTimeout(graceTimer); };
+  }, []);
+
+  const nav = (v: View) => setView(v);
+
+  const navItems: { id: View; icon: string; label: string }[] = [
+    { id: "dashboard", icon: "🏠", label: "Dashboard" },
+    { id: "settings", icon: "⚙️", label: "Einstellungen" },
+  ];
 
   return (
-    <div className="container">
-      <h1>Welcome to Tauri!</h1>
+    <div className="app-shell">
+      {/* Sidebar */}
+      <aside className="sidebar">
+        <div className="sidebar-logo">
+          <h1>GeoBoost</h1>
+          <span>GA4 &amp; SEO Analyse</span>
+        </div>
+        <nav className="sidebar-nav">
+          {navItems.map((item) => (
+            <div
+              key={item.id}
+              className={`nav-item ${view === item.id ? "active" : ""}`}
+              onClick={() => nav(item.id)}
+            >
+              <span className="nav-icon">{item.icon}</span>
+              {item.label}
+            </div>
+          ))}
+        </nav>
+        <div style={{ padding: "16px 20px", borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+          <div className="flex items-center gap-2">
+            <span
+              className={`status-dot ${backendOk === null ? "gray" : backendOk ? "green" : "red"}`}
+            />
+            <span className="text-xs text-muted" style={{ color: "var(--gray-500)" }}>
+              {backendOk === null ? "Verbinde..." : backendOk ? "Backend aktiv" : "Backend offline"}
+            </span>
+          </div>
+        </div>
+      </aside>
 
-      <div className="row">
-        <a href="https://vitejs.dev" target="_blank">
-          <img src="/vite.svg" className="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />
-        </a>
-        <a href="https://reactjs.org" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
+      {/* Main */}
+      <main className="main-content">
+        {/* Backend starting – show during grace period regardless of backendOk state */}
+        {!backendOk && startupGrace && (
+          <div style={{ marginBottom: 16, padding: "10px 16px", background: "var(--gray-100)", borderRadius: 6, fontSize: 13, color: "var(--gray-500)", display: "flex", alignItems: "center", gap: 10 }}>
+            <div className="status-dot orange" />
+            Backend wird gestartet, bitte warten...
+          </div>
+        )}
+        {/* Offline banner – only after grace period */}
+        {backendOk === false && !startupGrace && (
+          <div className="offline-banner" style={{ marginBottom: 16, borderRadius: "var(--radius-sm)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span>Backend nicht erreichbar. Bitte App neu starten oder Terminal öffnen und <code>source venv/bin/activate &amp;&amp; python3 backend/main.py</code> ausführen.</span>
+            <button className="btn btn-secondary btn-sm" onClick={() => checkHealth().then(() => setBackendOk(true)).catch(() => {})}>
+              Erneut versuchen
+            </button>
+          </div>
+        )}
 
-      <p>Click on the Tauri, Vite, and React logos to learn more.</p>
-
-      <div className="row">
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            greet();
-          }}
-        >
-          <input
-            id="greet-input"
-            onChange={(e) => setName(e.currentTarget.value)}
-            placeholder="Enter a name..."
+        {view === "dashboard" && (
+          <Dashboard
+            onNewAnalysis={() => {
+              setWizard({});
+              nav("kickoff");
+            }}
+            onViewAnalysis={(analysisId, projectId) => {
+              setWizard({ analysisId, projectId });
+              nav("progress");
+            }}
           />
-          <button type="submit">Greet</button>
-        </form>
-      </div>
+        )}
 
-      <p>{greetMsg}</p>
+        {view === "kickoff" && (
+          <Kickoff
+            initialData={wizard.kickoff}
+            onNext={(kickoff) => {
+              setWizard((w) => ({ ...w, kickoff }));
+              nav("checks");
+            }}
+            onCancel={() => nav("dashboard")}
+          />
+        )}
+
+        {view === "checks" && wizard.kickoff && (
+          <CheckSelector
+            kickoff={wizard.kickoff}
+            initialChecks={wizard.checks || DEFAULT_CHECKS}
+            backendOk={backendOk === true}
+            onStart={(checks, analysisId, projectId) => {
+              setWizard((w) => ({ ...w, checks, analysisId, projectId }));
+              nav("progress");
+            }}
+            onBack={() => nav("kickoff")}
+          />
+        )}
+
+        {view === "progress" && (
+          <AnalysisProgress
+            analysisId={wizard.analysisId!}
+            projectId={wizard.projectId!}
+            onDone={() => nav("dashboard")}
+            onNewAnalysis={() => {
+              setWizard({});
+              nav("kickoff");
+            }}
+          />
+        )}
+
+        {view === "settings" && <Settings />}
+      </main>
     </div>
   );
 }
-
-export default App;
