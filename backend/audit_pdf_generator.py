@@ -242,73 +242,149 @@ body { font-family: var(--font); font-size: 13px; line-height: 1.55; }
 
 /* ── Cover page ── */
 .cover {
-  min-height: 100vh;
+  width: 210mm;
+  min-height: 297mm;
   background: var(--cover-bg);
   display: flex; flex-direction: column;
-  justify-content: center; align-items: flex-start;
-  padding: 80px 60px;
   page-break-after: always;
   position: relative;
+  overflow: hidden;
 }
+
+/* Top bar: company name */
+.cover-topbar {
+  padding: 28px 52px;
+  display: flex; align-items: center; justify-content: space-between;
+  background: rgba(0,0,0,0.15);
+  {% if theme_name == "light" or theme_name == "color" %}background: rgba(0,0,0,0.12);{% endif %}
+}
+.cover-company {
+  font-size: 12px; font-weight: 700; letter-spacing: 2.5px;
+  text-transform: uppercase; color: var(--cover-text); opacity: 0.85;
+}
+.cover-badge {
+  background: var(--cover-badge-bg); color: var(--cover-badge-text);
+  font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
+  text-transform: uppercase; padding: 5px 14px;
+  border-radius: {% if theme_name == "nerd" or theme_name == "schnyder" %}3px{% else %}20px{% endif %};
+  {% if theme_name == "schnyder" %}border: 1px solid var(--primary);{% endif %}
+  {% if theme_name == "nerd" %}border: 1px solid var(--primary);{% endif %}
+}
+
+/* Decorative accent shapes */
+{% if theme_name == "light" %}
+.cover::before {
+  content: "";
+  position: absolute; top: -80px; right: -80px;
+  width: 320px; height: 320px; border-radius: 50%;
+  background: rgba(255,255,255,0.08);
+}
+.cover::after {
+  content: "";
+  position: absolute; bottom: 100px; left: -60px;
+  width: 200px; height: 200px; border-radius: 50%;
+  background: rgba(255,255,255,0.06);
+}
+{% endif %}
+{% if theme_name == "dark" %}
+.cover::before {
+  content: "";
+  position: absolute; top: -60px; right: -60px;
+  width: 280px; height: 280px; border-radius: 50%;
+  background: rgba(96,165,250,0.07);
+}
+{% endif %}
+{% if theme_name == "color" %}
+.cover::before {
+  content: "";
+  position: absolute; top: -100px; right: -100px;
+  width: 360px; height: 360px; border-radius: 50%;
+  background: rgba(255,255,255,0.1);
+}
+.cover::after {
+  content: "";
+  position: absolute; bottom: 80px; left: -80px;
+  width: 240px; height: 240px; border-radius: 50%;
+  background: rgba(255,255,255,0.07);
+}
+{% endif %}
 {% if theme_name == "schnyder" %}
 .cover::before {
-  content: "SCHNYDER\\AWERBUNG"; white-space: pre;
-  position: absolute; right: 60px; top: 80px;
-  font-size: 11px; letter-spacing: 3px;
-  color: var(--primary); opacity: 0.4;
+  content: "";
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 4px; background: var(--primary);
 }
 .cover::after {
   content: "";
   position: absolute; bottom: 0; left: 0; right: 0;
-  height: 3px; background: var(--primary);
+  height: 4px; background: var(--primary);
 }
 {% endif %}
 {% if theme_name == "nerd" %}
-.cover::before {
-  content: "$ analyse --report --generate";
-  position: absolute; top: 40px; left: 60px;
-  font-size: 11px; color: var(--primary); opacity: 0.7;
-  font-family: var(--font);
-}
-.cover::after {
-  content: "[ OK ] Analysis complete. Generating report...";
-  position: absolute; bottom: 48px; left: 60px;
-  font-size: 11px; color: var(--text-muted);
-  font-family: var(--font);
+.cover-nerd-prompt {
+  position: absolute; top: 72px; left: 52px;
+  font-size: 11px; color: var(--primary); opacity: 0.6;
+  font-family: var(--font); letter-spacing: 0;
 }
 {% endif %}
 
-.cover-badge {
-  background: var(--cover-badge-bg); color: var(--cover-badge-text);
-  font-size: 11px; font-weight: 600; letter-spacing: 2px;
-  text-transform: uppercase; padding: 6px 16px;
-  border-radius: 20px; margin-bottom: 32px; display: inline-block;
-  {% if theme_name == "schnyder" %}border: 1px solid var(--primary);{% endif %}
-  {% if theme_name == "nerd" %}border: 1px solid var(--primary); border-radius: 0;{% endif %}
+/* Main hero area */
+.cover-hero {
+  flex: 1;
+  display: flex; flex-direction: column;
+  justify-content: center;
+  padding: 0 52px;
+}
+.cover-eyebrow {
+  font-size: 11px; font-weight: 600; letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--cover-sub);
+  margin-bottom: 20px;
+  {% if theme_name == "schnyder" %}color: var(--primary);{% endif %}
+  {% if theme_name == "nerd" %}color: var(--primary);{% endif %}
 }
 .cover h1 {
-  color: var(--cover-text); font-size: 42px; font-weight: 800;
-  line-height: 1.15; margin-bottom: 12px;
-  {% if theme_name == "schnyder" %}letter-spacing: -1px;{% endif %}
-  {% if theme_name == "nerd" %}letter-spacing: 0;{% endif %}
+  color: var(--cover-text);
+  font-size: 48px; font-weight: 800;
+  line-height: 1.1; margin-bottom: 14px;
+  {% if theme_name == "schnyder" %}letter-spacing: -1.5px;{% endif %}
+  {% if theme_name == "nerd" %}font-size: 38px; letter-spacing: -0.5px;{% endif %}
 }
-.cover h2 {
-  color: var(--cover-sub); font-size: 20px; font-weight: 400;
-  margin-bottom: 44px;
+.cover-url {
+  font-size: 16px; font-weight: 400;
+  color: var(--cover-sub);
+  margin-bottom: 48px;
+  {% if theme_name == "nerd" %}font-family: var(--font); font-size: 14px;{% endif %}
 }
+.cover-divider {
+  width: 60px; height: 3px;
+  background: var(--primary);
+  margin-bottom: 48px;
+  {% if theme_name == "schnyder" %}width: 80px;{% endif %}
+}
+
+/* Bottom meta strip */
 .cover-meta {
   background: var(--cover-meta-bg);
-  border: 1px solid var(--cover-meta-border);
-  border-radius: {% if theme_name == "nerd" or theme_name == "schnyder" %}4px{% else %}12px{% endif %};
-  padding: 24px 32px;
-  display: grid; grid-template-columns: 1fr 1fr;
-  gap: 16px; min-width: 400px;
+  border-top: 1px solid var(--cover-meta-border);
+  {% if theme_name == "light" or theme_name == "color" %}border-top: 1px solid rgba(255,255,255,0.18);{% endif %}
+  padding: 28px 52px;
+  display: grid; grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 0;
 }
+.cover-meta-item {
+  padding: 0 20px 0 0;
+  border-right: 1px solid rgba(255,255,255,0.12);
+  {% if theme_name == "nerd" or theme_name == "schnyder" %}border-right: 1px solid var(--border);{% endif %}
+}
+.cover-meta-item:first-child { padding-left: 0; }
+.cover-meta-item:last-child { border-right: none; padding-right: 0; padding-left: 20px; }
 .cover-meta-item label {
-  color: var(--cover-label); font-size: 10px; text-transform: uppercase;
-  letter-spacing: 1px; display: block; margin-bottom: 3px;
+  color: var(--cover-label); font-size: 9px; text-transform: uppercase;
+  letter-spacing: 1.2px; display: block; margin-bottom: 5px;
+  {% if theme_name == "schnyder" %}color: var(--primary);{% endif %}
 }
-.cover-meta-item span { color: var(--cover-text); font-weight: 600; font-size: 14px; }
+.cover-meta-item span { color: var(--cover-text); font-weight: 600; font-size: 12px; }
 
 /* ── Layout ── */
 .page { padding: 48px 56px; background: var(--bg); }
@@ -415,20 +491,36 @@ tr:last-child td { border-bottom: none; }
 }
 .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 
-@page { @bottom-right { content: "{{ company }} · Seite " counter(page); font-size: 10px; color: var(--footer-color); } }
+/* First page: zero margin so cover bleeds to the edge */
+@page        { margin: 1.5cm 1.8cm; @bottom-right { content: "{{ company }} · Seite " counter(page); font-size: 10px; color: var(--footer-color); } }
+@page :first { margin: 0; @bottom-right { content: none; } }
 </style>
 </head>
 <body>
 
 <!-- ══ Cover ══════════════════════════════════════════════════════════════ -->
 <div class="cover">
-  <div class="cover-badge">SEO &amp; Performance Analyse</div>
-  <h1>{{ client_name or "Unbekannter Kunde" }}</h1>
-  <h2>{{ website_url or "" }}</h2>
+  {% if theme_name == "nerd" %}<div class="cover-nerd-prompt">$ analyse --report --generate</div>{% endif %}
+
+  <!-- Top bar -->
+  <div class="cover-topbar">
+    <span class="cover-company">{{ company }}</span>
+    <span class="cover-badge">SEO &amp; Performance Analyse</span>
+  </div>
+
+  <!-- Hero -->
+  <div class="cover-hero">
+    <div class="cover-eyebrow">Website-Analyse · {{ analysis_date }}</div>
+    <h1>{{ client_name or "Unbekannter Kunde" }}</h1>
+    <div class="cover-url">{{ website_url or "" }}</div>
+    <div class="cover-divider"></div>
+  </div>
+
+  <!-- Bottom meta strip -->
   <div class="cover-meta">
     <div class="cover-meta-item"><label>Analysezeitraum</label><span>{{ analysis_period or "–" }}</span></div>
-    <div class="cover-meta-item"><label>Analysedatum</label><span>{{ analysis_date }}</span></div>
-    <div class="cover-meta-item"><label>Ansprechpartner Kunde</label><span>{{ responsible_person or "–" }}</span></div>
+    <div class="cover-meta-item" style="padding-left:20px"><label>Analysedatum</label><span>{{ analysis_date }}</span></div>
+    <div class="cover-meta-item" style="padding-left:20px"><label>Ansprechpartner</label><span>{{ responsible_person or "–" }}</span></div>
     <div class="cover-meta-item"><label>Erstellt von</label><span>{{ analyst_name or company }}</span></div>
   </div>
 </div>
