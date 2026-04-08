@@ -443,6 +443,8 @@ ICONS = {
     "check":       _icon('<polyline points="20 6 9 17 4 12"/>'),
     "square":      _icon('<rect x="3" y="3" width="18" height="18" rx="2"/>'),
     "trending_up": _icon('<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>'),
+    "download":    _icon('<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>'),
+    "printer":     _icon('<polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>'),
 }
 
 
@@ -743,7 +745,38 @@ hr.divider { border: none; border-top: 1px solid var(--divider); margin: 28px 0;
   .overview-grid { grid-template-columns: repeat(2, 1fr); }
   .score-gauges { grid-template-columns: repeat(2, 1fr); }
 }
-@media print { .sidebar { display: none; } .layout { display: block; } .content { padding: 0; } }
+/* ── Print / PDF export button ── */
+.print-fab {
+  position: fixed; bottom: 28px; right: 28px; z-index: 999;
+  display: flex; align-items: center; gap: 8px;
+  background: var(--primary); color: #fff;
+  border: none; border-radius: 32px;
+  padding: 11px 20px 11px 16px;
+  font-size: 13px; font-weight: 700; cursor: pointer;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+  transition: transform .15s, box-shadow .15s, background .15s;
+}
+.print-fab:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0,0,0,0.3); }
+.print-fab:active { transform: translateY(0); }
+[data-theme="nerd"] .print-fab { border-radius: 4px; border: 1px solid var(--primary); background: var(--bg-card); color: var(--primary); }
+[data-theme="schnyder"] .print-fab { border-radius: 4px; border: 1px solid var(--primary); background: #000; color: var(--primary); }
+
+/* ── Print / PDF ── */
+@media print {
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  @page { margin: 1.4cm 1.6cm; }
+  .sidebar, .theme-picker, .print-fab, [data-theme="nerd"] body::before { display: none !important; }
+  .layout { display: block; }
+  .content { padding: 20px 0 0; }
+  .hero-inner { padding: 32px 40px 0; }
+  .hero-meta { padding: 16px 40px; }
+  .section { break-inside: avoid-page; page-break-inside: avoid; }
+  .prio-card, .table-wrap, .overview-card { break-inside: avoid; }
+  a { color: inherit !important; text-decoration: none !important; }
+  .overview-grid { grid-template-columns: repeat(3, 1fr) !important; }
+  .score-gauges { grid-template-columns: repeat(4, 1fr) !important; }
+  .two-col { grid-template-columns: 1fr 1fr !important; }
+}
 </style>
 </head>
 <body>
@@ -1257,6 +1290,12 @@ hr.divider { border: none; border-top: 1px solid var(--divider); margin: 28px 0;
   <strong>{{ company }}</strong> &mdash; SEO &amp; Performance Analyse &mdash; {{ analysis_date }}
   {% if website_url %}&mdash; {{ website_url }}{% endif %}
 </div>
+
+<!-- ══ PDF EXPORT BUTTON ═════════════════════════════════════════════════════ -->
+<button class="print-fab" onclick="window.print()" title="Als PDF speichern (Strg+P)">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+  Als PDF speichern
+</button>
 
 <script>
 // ── Theme Switcher ────────────────────────────────────────────────────────────

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import type { AuditTheme } from "../../../api";
-import { generateAuditHtml, AUDIT_THEMES } from "../../../api";
+import { generateAuditHtml, generateAuditPdf, AUDIT_THEMES } from "../../../api";
 import { invoke } from "@tauri-apps/api/core";
 
 export interface ReportData {
@@ -23,6 +23,8 @@ export default function Step6Report({ auditId, pdfPath, initial, onChange, onPdf
   const [data, setData] = useState<ReportData>({ ...EMPTY, ...initial });
   const [theme, setTheme] = useState<AuditTheme>("light");
   const [generating, setGenerating] = useState(false);
+  const [generatingPdf, setGeneratingPdf] = useState(false);
+  const [pdfFilePath, setPdfFilePath] = useState<string>("");
   const [err, setErr] = useState("");
 
   useEffect(() => { onChange(data); }, [data]);
@@ -46,6 +48,24 @@ export default function Step6Report({ auditId, pdfPath, initial, onChange, onPdf
     invoke("open_pdf", { path: pdfPath }).catch(() => {
       window.open(`file://${pdfPath}`, "_blank");
     });
+  };
+
+  const handleGeneratePdf = async () => {
+    setGeneratingPdf(true);
+    setErr("");
+    try {
+      const result = await generateAuditPdf(auditId, theme);
+      setPdfFilePath(result.pdf_path);
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : "PDF-Generierung fehlgeschlagen.");
+    } finally {
+      setGeneratingPdf(false);
+    }
+  };
+
+  const handleOpenPdf = () => {
+    if (!pdfFilePath) return;
+    invoke("open_pdf", { path: pdfFilePath }).catch(() => {});
   };
 
   return (
@@ -90,25 +110,57 @@ export default function Step6Report({ auditId, pdfPath, initial, onChange, onPdf
         </div>
       </div>
 
-      <div style={{ marginTop: 24, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-        <button type="button" onClick={handleGenerate} disabled={generating}
-          style={{ background: generating ? "#9ca3af" : "#2563eb", color: "white", border: "none", borderRadius: 8, padding: "12px 28px", fontSize: 14, fontWeight: 700, cursor: generating ? "wait" : "pointer" }}>
-          {generating ? "⏳ Bericht wird erstellt..." : "🌐 Website-Bericht erstellen"}
-        </button>
-        {pdfPath && (
-          <button type="button" onClick={handleOpenHtml}
-            style={{ background: "#16a34a", color: "white", border: "none", borderRadius: 8, padding: "12px 24px", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
-            🌐 Im Browser öffnen
+      {/* HTML Report */}
+      <div style={{ marginTop: 28, padding: "20px", background: "var(--bg-card,#f9fafb)", border: "1px solid var(--border,#e5e7eb)", borderRadius: 10 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>Website-Bericht (HTML)</div>
+        <div style={{ fontSize: 12, color: "var(--gray-500,#6b7280)", marginBottom: 14 }}>
+          Interaktiver Bericht mit Theme-Wechsel und Grafiken – direkt im Browser öffnen oder dort als PDF speichern.
+        </div>
+        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+          <button type="button" onClick={handleGenerate} disabled={generating}
+            style={{ background: generating ? "#9ca3af" : "#2563eb", color: "white", border: "none", borderRadius: 8, padding: "10px 22px", fontSize: 13, fontWeight: 700, cursor: generating ? "wait" : "pointer" }}>
+            {generating ? "Erstellt..." : "HTML erstellen"}
           </button>
+          {pdfPath && (
+            <button type="button" onClick={handleOpenHtml}
+              style={{ background: "#16a34a", color: "white", border: "none", borderRadius: 8, padding: "10px 20px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+              Im Browser öffnen
+            </button>
+          )}
+        </div>
+        {pdfPath && (
+          <div style={{ marginTop: 10, fontSize: 11, color: "var(--gray-500,#6b7280)" }}>
+            Gespeichert: <code>{pdfPath}</code>
+          </div>
         )}
-        {err && <span style={{ fontSize: 13, color: "#dc2626" }}>{err}</span>}
       </div>
 
-      {pdfPath && (
-        <div style={{ marginTop: 14, padding: "12px 16px", background: "#dcfce7", borderRadius: 8, fontSize: 13, color: "#15803d" }}>
-          Bericht gespeichert: <code style={{ fontSize: 11 }}>{pdfPath}</code>
+      {/* PDF Export */}
+      <div style={{ marginTop: 12, padding: "20px", background: "var(--bg-card,#f9fafb)", border: "1px solid var(--border,#e5e7eb)", borderRadius: 10 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>PDF-Export</div>
+        <div style={{ fontSize: 12, color: "var(--gray-500,#6b7280)", marginBottom: 14 }}>
+          Druckfertiges PDF mit dem gewählten Theme – ideal zum Versenden per E-Mail.
         </div>
-      )}
+        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+          <button type="button" onClick={handleGeneratePdf} disabled={generatingPdf}
+            style={{ background: generatingPdf ? "#9ca3af" : "#7c3aed", color: "white", border: "none", borderRadius: 8, padding: "10px 22px", fontSize: 13, fontWeight: 700, cursor: generatingPdf ? "wait" : "pointer" }}>
+            {generatingPdf ? "Erstellt..." : "PDF erstellen"}
+          </button>
+          {pdfFilePath && (
+            <button type="button" onClick={handleOpenPdf}
+              style={{ background: "#16a34a", color: "white", border: "none", borderRadius: 8, padding: "10px 20px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+              PDF öffnen
+            </button>
+          )}
+        </div>
+        {pdfFilePath && (
+          <div style={{ marginTop: 10, fontSize: 11, color: "var(--gray-500,#6b7280)" }}>
+            Gespeichert: <code>{pdfFilePath}</code>
+          </div>
+        )}
+      </div>
+
+      {err && <div style={{ marginTop: 12, fontSize: 13, color: "#dc2626" }}>{err}</div>}
     </div>
   );
 }
